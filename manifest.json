@@ -1,0 +1,31 @@
+{
+  "name": "Musescore Downloader",
+  "description": "This extension allows you to download sheets and audio.",
+  "version": "0.0.1",
+  "permissions": [
+    "storage",
+    "activeTab",
+    "https://musescore.com/*",
+    "https://s3.ultimate-guitar.com/musescore.scoredata/g/*"
+  ],
+  "optional_permissions": [
+    "webRequest"
+  ],
+  "browser_action": {
+    "default_popup": "./src/popup.html"
+  },
+  "background": {
+    "scripts": [
+      "./src/scripts/background.js"
+    ],
+    "persistent": false
+  },
+  "icons": {
+    "16": "./src/images/pic16.png",
+    "32": "./src/images/pic32.png",
+    "48": "./src/images/pic48.png",
+    "128": "./src/images/pic128.png"
+  },
+  "content_security_policy": "script-src 'self'; object-src 'self';",
+  "manifest_version": 2
+}
