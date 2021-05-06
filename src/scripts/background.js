@@ -44,15 +44,16 @@
                         }
 
                         if (i === FetchedPages.length - 1) {
+                            const find = ['<', '>', '"', "'", '?', ':', '/', '\\', '|', '*'];
+
+                            for (let i = 0; i < find.length; i++) {
+                                SheetName = SheetName.replace(find[i], '');
+                            }
+
+                            doc.info['Title'] = SheetName;
+
                             doc.end();
-
                             if (TriggerType === 'Download') {
-                                const find = ['<', '>', '"', "'", '?', ':', '/', '\\', '|', '*'];
-
-                                for (let i = 0; i < find.length; i++) {
-                                    SheetName = SheetName.replace(find[i], '');
-                                }
-
                                 stream.on("finish", () => {
                                     chrome.downloads.download({
                                         filename: `${SheetName}.pdf`,
@@ -61,7 +62,9 @@
                                     });
                                 });
                             } else if (TriggerType === 'Open') {
-                                //todo open sheet in new tab
+                                stream.on("finish", () => {
+                                    chrome.tabs.create({url: stream.toBlobURL("application/pdf")});
+                                });
                             }
                         } else {
                             doc.addPage();

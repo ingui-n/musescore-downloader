@@ -82,7 +82,6 @@
     }
 
     async function ResolveMainBackListener(message) {
-        chrome.runtime.onMessage.removeListener(ResolveMainBackListener);
         if (typeof message === 'object' && message.Sheet) {
             if (message.Sheet === '-') {
                 PrintToPopup(false, 'Something went wrong :( Try it again', 2);
@@ -103,9 +102,27 @@
         return;
     }
 
-    let TriggerType = 'Download';//todo add buttons
+    PrintToPopup(true);
+    let TriggerType;
 
-    CallMainBack({'ResolveMainBack': 'ScanSheet'});
+    const SheetOpenB = document.querySelector('.sheet__open');
+    const SheetDownloadB = document.querySelector('.sheet__download');
+    const AudioDownloadB = document.querySelector('.audio__download');
+
+    SheetOpenB.addEventListener('click', () => {
+        TriggerType = 'Open';
+        CallMainBack({'ResolveMainBack': 'ScanSheet'});
+    });
+
+    SheetDownloadB.addEventListener('click', () => {
+        TriggerType = 'Download';
+        CallMainBack({'ResolveMainBack': 'ScanSheet'});
+    });
+
+    AudioDownloadB.addEventListener('click', () => {
+        TriggerType = 'Download';//todo watch out for the audio
+        CallMainBack({'ResolveMainBack': 'ScanSheet'});
+    });
 
     chrome.runtime.onMessage.addListener(ResolveMainBackListener);
 }();
