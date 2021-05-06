@@ -5,6 +5,7 @@
     function ScanSheet() {
         let StartTime = Date.now();
 
+        /** Allows to see all pages without !rendering */
         function GetPages() {
             SuperDiv.style.height = '1000000px';
             const PagesDiv = document.querySelectorAll('._2_Ppp');
@@ -20,6 +21,7 @@
             return Urls.filter(Boolean);
         }
 
+        /** Calls function that gets url of the element */
         function TriggerGetPages() {
             function KillScan() {
                 SuperDiv.style.height = '';
@@ -38,7 +40,10 @@
                 Pages = GetPages();
             } else {
                 KillScan();
-                CallMain(Pages);
+
+                const SheetName = document.querySelector('.NEej-').textContent;
+
+                CallMain(SheetName, Pages);
             }
         }
 
@@ -51,24 +56,17 @@
         let interval = setInterval(TriggerGetPages, 100);
     }
 
-    /** Reloads host */
-    function ReloadHost() {
-        location.reload();
-    }
-    
-    function CallMain(Pages) {
-        chrome.runtime.sendMessage({'Pages': Pages});
+    /** Returns message to main.js */
+    function CallMain(SheetName, Pages) {
+        chrome.runtime.sendMessage({'Sheet': [SheetName, Pages]});
     }
 
     /** Resolve Listener */
     function ListenerHandler(message) {
         if (typeof message === 'object' && message.ResolveMainBack) {
-            if (message.ResolveMainBack[0] === 'ScanSheet') {
+            chrome.runtime.onMessage.removeListener(ListenerHandler);
+            if (message.ResolveMainBack === 'ScanSheet') {
                 ScanSheet();
-                chrome.runtime.onMessage.removeListener(ListenerHandler);
-            } else if (message.ResolveMainBack === 'Reload') {
-                chrome.runtime.onMessage.removeListener(ListenerHandler);
-                ReloadHost();
             }
         }
     }

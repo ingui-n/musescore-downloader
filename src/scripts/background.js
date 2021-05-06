@@ -1,80 +1,87 @@
 !function () {
     'use strict';
 
-    /** Handle web request */
-    function GetRequest(details) {
-        if (details.tabId > 0) {
-            chrome.tabs.get(details.tabId, async tab => {
-                await SetDefaultSiteStorageVariable();
-                await CheckSiteActuality(tab.url, details.url);
+    async function ResolveListener(message) {
+        if (typeof message === 'object' && message.ResolveSheetBackground) {
+            await MakePDF(message.ResolveSheetBackground[0], message.ResolveSheetBackground[1], message.ResolveSheetBackground[2]);
+        }
+    }
 
-                console.log(details);
+    async function MakePDF(SheetName, TriggerType, Pages) {
+        async function GetPage(url, res, i) {
+            const match = /\/score_\d+.(\w+)/.exec(url);
+            const FileType = match[1];
+
+            let DataType;
+
+            if (FileType.toUpperCase() === 'PNG') {
+                DataType = await res.arrayBuffer();
+            } else if (FileType.toUpperCase() === 'SVG') {
+                DataType = await res.text();
+            }
+
+            FetchedPages.push({[i]: [FileType, DataType]});
+
+            if (FetchedPages.length === Pages.length)
+                CreatePDF();
+        }
+
+        function CreatePDF() {
+            const doc = new PDFDocument({
+                size: [595, 842]
             });
+
+            const stream = doc.pipe(blobStream());
+
+            for (let i = 0; i < FetchedPages.length; i++) {
+                for (let a = 0; a < FetchedPages.length; a++) {
+                    if (FetchedPages[a][i]) {
+
+                        if (FetchedPages[a][i][0].toUpperCase() === 'PNG') {
+                            doc.image(FetchedPages[a][i][1], 0, 0, {fit: [595, 842]});
+                        } else if (FetchedPages[a][i][0].toUpperCase() === 'SVG') {
+                            SVGtoPDF(doc, FetchedPages[a][i][1], 0, 0, {preserveAspectRatio: "16:9"});
+                        }
+
+                        if (i === FetchedPages.length - 1) {
+                            doc.end();
+
+                            if (TriggerType === 'Download') {
+                                const find = ['<', '>', '"', "'", '?', ':', '/', '\\', '|', '*'];
+
+                                for (let i = 0; i < find.length; i++) {
+                                    SheetName = SheetName.replace(find[i], '');
+                                }
+
+                                stream.on("finish", () => {
+                                    chrome.downloads.download({
+                                        filename: `${SheetName}.pdf`,
+                                        url: stream.toBlobURL("application/pdf"),
+                                        saveAs: true
+                                    });
+                                });
+                            } else if (TriggerType === 'Open') {
+                                //todo open sheet in new tab
+                            }
+                        } else {
+                            doc.addPage();
+                        }
+                    }
+                }
+            }
+        }
+
+        let FetchedPages = [];
+
+        for (let i = 0; i < Pages.length; i++) {
+            fetch(Pages[i])
+                .then(res => {
+                    return res.ok ? res.blob() : undefined;
+                })
+                .then(res => GetPage(Pages[i], res, i))
+                .catch(e => console.log(e));
         }
     }
 
-    /** Returns variable SiteCache */
-    async function GetSiteCache() {
-        const target = await new Promise(res => chrome.storage.local.get('SiteCache', res));
-        return target['SiteCache'];
-    }
-
-    /** Sets default storage variable "SiteCache" - if is not defined */
-    async function SetDefaultSiteStorageVariable() {
-        const tabs = await GetSiteCache();
-
-        if (typeof tabs !== 'object')
-            chrome.storage.local.set({'SiteCache': {}});
-    }
-
-    /** Check if is sheet still up to date */
-    async function CheckSiteActuality(TabUrl, SheetUrl) {
-        const TabsCache = await GetSiteCache();
-
-        for (const [key, value] of Object.entries(TabsCache)) {
-            if (value.changed + 300000 < Date.now())
-                delete TabsCache[key];
-        }
-
-        await SetSheet(TabUrl, SheetUrl, TabsCache);
-    }
-
-    /** Sets part of the sheet to storage */
-    function SetSheet(TabUrl, SheetUrl, TabsCache) {
-        const Type = GetSheetType(SheetUrl);
-
-        if (!Type) return;
-
-        if (!TabsCache[TabUrl])
-            TabsCache[TabUrl] = {};
-
-        if (Type.startsWith('sheet') && TabsCache[TabUrl]['sheet0'] === undefined)
-            TabsCache[TabUrl]['sheet0'] = GetFirstPage(SheetUrl);
-
-        TabsCache[TabUrl][Type] = SheetUrl;
-        TabsCache[TabUrl].changed = Date.now();
-
-        chrome.storage.local.set({'SiteCache': TabsCache});
-    }
-
-    /** Return sheet type */
-    function GetSheetType(SheetUrl) {
-        const match = /^https:\/\/s3\.ultimate-guitar\.com\/musescore\.scoredata\/g\/\w+\/score(_(?<sheet>\d+))?\.\w+/.exec(SheetUrl);
-
-        return match ? match.groups.sheet ? `sheet${match.groups.sheet}` : 'audio' : null;
-    }
-
-    /** Returns URL for first page of the sheet */
-    function GetFirstPage(SheetUrl) {
-        const match = /^(https:\/\/s3.ultimate-guitar\.com\/musescore\.scoredata\/g\/\w+\/score_)(\d+)(\.\w+)/.exec(SheetUrl);
-
-        return match ? match[1] + 0 + match[3] : null;
-    }
-
-    chrome.webRequest.onBeforeRequest.addListener(
-        GetRequest,
-        {urls: ['https://s3.ultimate-guitar.com/musescore.scoredata/g/*']}
-    );
-
-    chrome.runtime.onStartup.addListener(SetDefaultSiteStorageVariable);
+    chrome.runtime.onMessage.addListener(ResolveListener);
 }();
