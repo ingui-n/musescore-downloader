@@ -75,8 +75,12 @@
     }
 
     /** Returns variable SiteCache */
-    async function GetSiteCache(TabUrl) {
+    async function GetSiteCache(TabUrl, SheetPagesNum) {
         const target = await new Promise(res => chrome.storage.local.get('SiteCache', res));
+
+        if (target['SiteCache'][TabUrl] === undefined)
+            CallMainBack({'ResolveMainBack': ['ScanSheet', SheetPagesNum]});
+
         return target['SiteCache'][TabUrl];
     }
 
@@ -106,7 +110,7 @@
     /** Checks if is there all pages */
     async function CheckPages(TabCache, SheetPagesNum) {
         for (let i = 0; i < SheetPagesNum; i++) {
-            if (TabCache[`sheet${i}`] === undefined)
+            if (typeof TabCache[`sheet${i}`] === 'undefined')
                 return false;
         }
         return true;
@@ -124,26 +128,91 @@
         return;
     }
 
-    const TabCache = await GetSiteCache(Tab.url);
     const SheetPagesNum = await GetNumberOfPages(Tab.url);
-    const IsPagesAll = await CheckPages(TabCache, SheetPagesNum);
+    const TabCache = await GetSiteCache(Tab.url, SheetPagesNum);
+
+    console.log(TabCache);
+    console.log(SheetPagesNum);
     CallMainBack({'ResolveMainBack': ['ScanSheet', SheetPagesNum]});
 
-
-    if (TabCache === undefined || !IsPagesAll) {
-        CallMainBack({'ResolveMainBack': ['ScanSheet', SheetPagesNum]});
-//        CallMainBack({'ResolveMainBack': 'Reload'});
-
-        //todo reload message
-        //todo reload window && popup
+    async function ResolveMainBackListener(message) {
+        chrome.runtime.onMessage.removeListener(ResolveMainBackListener);
+        if (typeof message === 'object' && message.Pages) {
+            if (message.Pages === '-') {
+                PrintToPopup(false, 'Something went wrong :( Try it again', 2);
+            } else if (typeof message.Pages === 'object') {
+                await MakePDF(message.Pages);
+            }
+        }
     }
 
+    async function MakePDF(Pages) {
+        async function GetPage(url, res, i) {
+            const match = /\/score_\d+.(\w+)/.exec(url);
+            const FileType = match[1];
 
-    if (!IsPagesAll) {
-        CallMainBack({'ResolveMainBack': 'ScanSheet'});
-        //todo scan sheet
-        return;
+            let DataType;
+
+            if (FileType.toUpperCase() === 'PNG') {
+                DataType = await res.arrayBuffer();
+            } else if (FileType.toUpperCase() === 'SVG') {
+                DataType = await res.text();
+            }
+
+            FetchedPages.push({[i]: [FileType, DataType]});
+
+            if (FetchedPages.length === Pages.length)
+                CreatePDF();
+        }
+
+        function CreatePDF() {
+            const doc = new PDFDocument({
+                size: [595, 842]
+            });
+
+            const stream = doc.pipe(blobStream());
+
+            for (let i = 0; i < FetchedPages.length; i++) {
+                for (let a = 0; a < FetchedPages.length; a++) {
+                    if (FetchedPages[a][i]) {
+                        console.log(FetchedPages[a][i]);
+
+                        if (FetchedPages[a][i][0].toUpperCase() === 'PNG') {
+                            doc.image(FetchedPages[a][i][1], 0, 0, {fit: [595, 842]});
+                        } else if (FetchedPages[a][i][0].toUpperCase() === 'SVG') {
+                            SVGtoPDF(doc, FetchedPages[a][i][1], 0, 0, {preserveAspectRatio: "16:9"});
+                        }
+
+                        if (i === FetchedPages.length - 1) {
+                            doc.end();
+                            stream.on("finish", () => {
+                                chrome.downloads.download({
+                                    filename: 'test.pdf',
+                                    url: stream.toBlobURL("application/pdf"),
+                                    saveAs: true
+                                });
+                            });
+
+                            //todo save to storage
+                        } else {
+                            doc.addPage();
+                        }
+                    }
+                }
+            }
+        }
+
+        let FetchedPages = [];
+
+        for (let i = 0; i < Pages.length; i++) {
+            fetch(Pages[i])
+                .then(res => {
+                    return res.ok ? res.blob() : undefined;
+                })
+                .then(res => GetPage(Pages[i], res, i))
+                .catch(e => console.log(e));
+        }
     }
 
-
+    chrome.runtime.onMessage.addListener(ResolveMainBackListener);
 }();

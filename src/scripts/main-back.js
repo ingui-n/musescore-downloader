@@ -2,60 +2,70 @@
     'use strict';
 
     /** Scans web for sheet pages */
-    async function ScanSheet(PagesNum) {
+    function ScanSheet() {
+        let StartTime = Date.now();
+
+        function GetPages() {
+            SuperDiv.style.height = '1000000px';
+            const PagesDiv = document.querySelectorAll('._2_Ppp');
+
+            let Urls = [];
+            for (let i = 0; i < PagesDiv.length; i++) {
+                if (typeof PagesDiv[i].src !== 'string') {
+                    return false;
+                }
+                Urls.push(PagesDiv[i].src);
+
+            }
+            return Urls.filter(Boolean);
+        }
+
+        function TriggerGetPages() {
+            function KillScan() {
+                SuperDiv.style.height = '';
+                clearInterval(interval);
+            }
+
+            const PagesDivs = document.querySelectorAll('.vAVs3');
+
+            if (Pages.length !== PagesDivs.length) {
+                if (Date.now() - StartTime > 100000) {
+                    KillScan();
+                    CallMain('-');
+                    return;
+                }
+                
+                Pages = GetPages();
+            } else {
+                KillScan();
+                CallMain(Pages);
+            }
+        }
+
+        let SuperDiv = document.querySelector('._5tn-M');
         let targetDiv = document.querySelector('.JQKO_');
+        let Pages = [];
 
-        document.querySelector('._1ucZr').innerHTML = PagesNum;
+        targetDiv.scrollTo(0, 0);
 
-        function ScrollDiv(Top) {
-            targetDiv.scrollTo({
-                top: Top,
-                behavior: 'smooth'
-            });
-            ScrollTopNum += 900;
-        }
-
-        function PreScroll() {
-            if (PagesNum === 0)
-                clearInterval(PreScroll);
-            document.querySelector('._1ucZr').innerHTML = PagesNum;
-            PagesNum--;
-            ScrollDiv(ScrollTopNum);//todo stop this now
-        }
-
-        let ScrollTopNum = 0;
-
-        setInterval(PreScroll, 900);
-
-        /*function ScrollToTop() {
-            targetDiv.scrollTo({
-                top: 0,
-                behavior: 'smooth'
-            });
-        }
-
-        function ScrollToBottom() {
-            targetDiv.scrollTo({
-                top: 50000000,
-                behavior: 'smooth'
-            });
-        }
-
-        ScrollToBottom();
-        setTimeout(ScrollToTop, 1000);*/
+        let interval = setInterval(TriggerGetPages, 100);
     }
 
     /** Reloads host */
     function ReloadHost() {
         location.reload();
     }
+    
+    function CallMain(Pages) {
+        chrome.runtime.sendMessage({'Pages': Pages});
+    }
 
     /** Resolve Listener */
     function ListenerHandler(message) {
         if (typeof message === 'object' && message.ResolveMainBack) {
             if (message.ResolveMainBack[0] === 'ScanSheet') {
+                ScanSheet();
                 chrome.runtime.onMessage.removeListener(ListenerHandler);
-                ScanSheet(message.ResolveMainBack[1]);
             } else if (message.ResolveMainBack === 'Reload') {
                 chrome.runtime.onMessage.removeListener(ListenerHandler);
                 ReloadHost();
@@ -65,65 +75,3 @@
 
     chrome.runtime.onMessage.addListener(ListenerHandler);
 }();
-
-
-/** Scrolls to the end of the site */
-async function ScrollToTheEnd() {
-
-    //900
-
-    /*const syncWait = ms => {
-        const end = Date.now() + ms
-        while (Date.now() < end) {}
-    }
-
-    let targetDiv = document.querySelector('.JQKO_');
-    const pagesLength = parseInt(document.querySelectorAll('.GgVyz')[1].textContent);
-
-    let pageHeight = 900;
-    let pagesList = [];
-
-    for (let i = 0; i < pagesLength; i++) {
-        pagesList.push(document.querySelectorAll('._2_Ppp')[1].src);
-
-        const end = Date.now() + 1000;
-        while (Date.now() < end) {}
-
-        Scroll(targetDiv, pageHeight);
-        pageHeight += 900;
-
-    }
-    document.querySelector('._1ucZr').innerHTML = pagesList.toString();*/
-
-
-    /*pagesLength.forEach(value => {
-        //setTimeout(() => {
-            Scroll(targetDiv, pageHeight);
-        //}, 1000);
-
-        pageHeight += 900;
-    });*/
-
-    /*if (typeof targetDiv === 'undefined')
-        targetDiv = document.querySelector('.Nj4E6');
-
-    Scroll(targetDiv, targetDiv.scrollHeight, 50000000);
-    setTimeout(() => Scroll(targetDiv, 0, 0), 1000);*/
-}
-
-function Scroll(target, top) {
-    /*let start = Date.now(),
-        now = start;
-
-    while (now - start < 500) {*/
-    target.scrollTo({
-        top: top,
-        behavior: 'smooth'
-    });
-    /*now = Date.now();
-}*/
-}
-
-//ScrollToTheEnd();
-
-//document.querySelector('._1ucZr').innerHTML = document.querySelectorAll('._2_Ppp').length.toString();

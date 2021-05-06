@@ -1,11 +1,6 @@
 !function () {
     'use strict';
 
-    chrome.webRequest.onBeforeRequest.addListener(
-        GetRequest,
-        {urls: ['https://s3.ultimate-guitar.com/musescore.scoredata/g/*']}
-    );
-
     /** Handle web request */
     function GetRequest(details) {
         if (details.tabId > 0) {
@@ -75,4 +70,11 @@
 
         return match ? match[1] + 0 + match[3] : null;
     }
+
+    chrome.webRequest.onBeforeRequest.addListener(
+        GetRequest,
+        {urls: ['https://s3.ultimate-guitar.com/musescore.scoredata/g/*']}
+    );
+
+    chrome.runtime.onStartup.addListener(SetDefaultSiteStorageVariable);
 }();
