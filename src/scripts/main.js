@@ -5,21 +5,13 @@
     async function GetTab() {
         const query = {active: true, currentWindow: true};
 
-        let Tab = await new Promise((resolve, reject) => {
+        let Tab = await browser.tabs.query(query);
 
-            try {
-                chrome.tabs.query(query, async tabs => {
-                    resolve(tabs[0]);
-                });
-            } catch (e) {
-                reject(e);
-            }
-        });
+        while (Tab[0].status !== 'complete') {
+            Tab = await browser.tabs.query(query);
+        }
 
-        if (Tab.status !== 'complete')
-            Tab = await GetTab();
-
-        return Tab;
+        return Tab[0];
     }
 
     /** Check URL if is MOODLE */
@@ -54,10 +46,8 @@
         });
 
         if (PrintSolver) {
-            html.style.setProperty('--html-height', '246px');
+            html.style.setProperty('--html-height', '165px');
             body.appendChild(SolverContent);
-
-            ResetBackgroundColorAnimation();
 
             pMessage.textContent = '';
         } else {
@@ -67,6 +57,7 @@
             pMessage.classList.add(`message-${MessageLen}-line`);
             pMessage.textContent = Message;
         }
+        ResetBackgroundColorAnimation();
     }
 
     /** Returns content div */
@@ -75,18 +66,23 @@
     }
 
     /** Calls main-background script */
-    function CallMainBack(Parameters) {
-        chrome.tabs.executeScript(Tab.id, {file: `/src/scripts/main-back.js`}, () => {
-            chrome.tabs.sendMessage(Tab.id, Parameters);
-        });
+    async function CallContent(Type, TriggerType) {
+        let Message = {
+            'MDMain': {
+                'Type': Type,
+                'Trigger': TriggerType
+            }
+        };
+
+        chrome.tabs.sendMessage(Tab.id, Message);
+        browser.runtime.onMessage.addListener(ResolveContentListener);
     }
 
-    async function ResolveMainBackListener(message) {
-        if (typeof message === 'object' && message.Sheet) {
-            if (message.Sheet === '-') {
+    /** Catches Errors */
+    async function ResolveContentListener(message) {
+        if (typeof message === 'object' && message.MDContent) {
+            if (message.MDContent === '-') {
                 PrintToPopup(false, 'Something went wrong :( Try it again', 2);
-            } else if (typeof message.Sheet === 'object') {
-                chrome.runtime.sendMessage({'ResolveSheetBackground': [message.Sheet[0], TriggerType, message.Sheet[1]]});
             }
         }
     }
@@ -103,26 +99,20 @@
     }
 
     PrintToPopup(true);
-    let TriggerType;
 
     const SheetOpenB = document.querySelector('.sheet__open');
     const SheetDownloadB = document.querySelector('.sheet__download');
     const AudioDownloadB = document.querySelector('.audio__download');
 
     SheetOpenB.addEventListener('click', () => {
-        TriggerType = 'Open';
-        CallMainBack({'ResolveMainBack': 'ScanSheet'});
+        CallContent('Sheet', 'Open');
     });
 
     SheetDownloadB.addEventListener('click', () => {
-        TriggerType = 'Download';
-        CallMainBack({'ResolveMainBack': 'ScanSheet'});
+        CallContent('Sheet', 'Download');
     });
 
     AudioDownloadB.addEventListener('click', () => {
-        TriggerType = 'Download';//todo watch out for the audio
-        CallMainBack({'ResolveMainBack': 'ScanSheet'});
+        CallContent('Audio', 'Download');
     });
-
-    chrome.runtime.onMessage.addListener(ResolveMainBackListener);
 }();

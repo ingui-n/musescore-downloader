@@ -1,8 +1,8 @@
 @import url('https://fonts.googleapis.com/css2?family=Fira+Sans&display=swap');
 
 :root {
-    --html-width: 250px;
-    --html-height: 190px;
+    --html-width: 280px;
+    --html-height: 165px;
     --color-animation: background-migration 3s ease alternate infinite;
     --color-backbround: linear-gradient(60deg, #f79533, #f37055, #ef4e7b, #a166ab, #5073b8, #1098ad, #07b39b, #6fba82);
 }
@@ -49,9 +49,10 @@ button {
     outline: none;
 }
 
-.img__moodle {
-    height: 20px;
+.img__musescore {
+    height: 29px;
     padding-right: 5px;
+    margin-top: -4px;
 }
 
 @keyframes background-migration {
@@ -88,7 +89,7 @@ button {
 
 .fun__content {
     text-align: center;
-    position: fixed;
+    position: sticky;
 }
 
 .fun__container {
@@ -97,6 +98,7 @@ button {
 }
 
 .btn__fun {
+    width: 116px;
     padding-top: 7px;
     padding-bottom: 7px;
     text-decoration: none;
@@ -114,7 +116,7 @@ button {
     content: '';
     position: absolute;
     height: 35px;
-    width: 201px;
+    width: 120px;
     left: -2px;
     top: -2px;
     background: var(--color-backbround);
@@ -174,10 +176,10 @@ button {
 
 .message-1-line {
     display: block;
-    top: 52px;
+    top: 40px;
 }
 
 .message-2-line {
     display: block;
-    top: 38px;
+    top: 26px;
 }

@@ -8,12 +8,23 @@
 </head>
 <body>
 <div class="content">
-    <button class="sheet__open">Open Sheet</button>
-    <button class="sheet__download">Download Sheet</button>
-    <button class="audio__download">Download Audio</button>
+    <div class="d__title">
+        <img src="images/musescore-logo.png" class="img__musescore" alt="Musescore">
+        <h2 class="h__title">Downloader</h2>
+    </div>
+    <div class="fun__content">
+        <div>
+            <button class="btn__fun sheet__open">Open Sheet</button>
+            <button class="btn__fun sheet__download">Download Sheet</button>
+        </div>
+        <div>
+            <button class="btn__fun audio__download">Download Audio</button>
+        </div>
+    </div>
 </div>
 <p class="message">Wait a moment ...</p>
 
+<script src="scripts/libs/browser-polyfill.js"></script>
 <script src="scripts/main.js"></script>
 </body>
 </html>

@@ -20,12 +20,22 @@
   },
   "background": {
     "scripts": [
-      "./src/scripts/background.js",
+      "./src/scripts/libs/browser-polyfill.js",
       "./src/scripts/libs/blob-stream.js",
       "./src/scripts/libs/pdfkit.js",
-      "./src/scripts/libs/svg-pdf.js"
+      "./src/scripts/libs/svg-pdf.js",
+      "./src/scripts/background.js"
     ],
     "persistent": true
   },
+  "content_scripts": [
+    {
+      "matches": ["https://musescore.com/*"],
+      "js": [
+        "./src/scripts/libs/browser-polyfill.js",
+        "./src/scripts/content.js"
+      ]
+    }
+  ],
   "content_security_policy": "script-src 'self' 'unsafe-eval'; object-src 'self';"
 }
