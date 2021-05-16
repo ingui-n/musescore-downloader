@@ -66,7 +66,7 @@
     }
 
     /** Calls main-background script */
-    async function CallContent(Type, TriggerType) {
+    function CallContent(Type, TriggerType) {
         let Message = {
             'MDMain': {
                 'Type': Type,
@@ -79,10 +79,10 @@
     }
 
     /** Catches Errors */
-    async function ResolveContentListener(message) {
+    function ResolveContentListener(message) {
         if (typeof message === 'object' && message.MDContent) {
             if (message.MDContent === '-') {
-                PrintToPopup(false, 'Something went wrong :( Try it again', 2);
+                PrintToPopup(false, 'Something went wrong :(', 1);
             }
         }
     }

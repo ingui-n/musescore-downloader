@@ -92,11 +92,6 @@ button {
     position: sticky;
 }
 
-.fun__container {
-    display: flex;
-    flex-direction: column;
-}
-
 .btn__fun {
     width: 116px;
     padding-top: 7px;
@@ -128,36 +123,6 @@ button {
 .btn__fun:hover {
     -webkit-background-clip: text;
     -webkit-text-fill-color: white;
-}
-
-.btn__fun-not-supported, .btn__fun-not-supported:hover {
-    filter: grayscale(100%);
-    cursor: default;
-}
-
-.btn__show-more {
-    background: #1D1F20;
-    position: relative;
-    width: 110px;
-    padding: 7px 18px;
-    text-decoration: none;
-    font-size: 14px;
-    margin: 12px;
-    cursor: pointer;
-    border: transparent;
-}
-
-.btn__show-more:before {
-    content: '';
-    position: absolute;
-    height: 35px;
-    width: 114px;
-    left: -2px;
-    top: -2px;
-    background: var(--color-backbround);
-    z-index: -1;
-    animation: var(--color-animation);
-    background-size: 300% 300%;
 }
 
 /** Message **/
