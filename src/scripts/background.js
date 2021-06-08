@@ -3,6 +3,7 @@
 
     /** Resolves listener from content.js */
     async function ResolveListener(message) {
+        console.log(message);
         if (typeof message === 'object' && message.MDContent) {
             if (message.MDContent.Type === 'Audio') {
                 HandleAudio(message.MDContent.Name, message.MDContent.Urls, message.MDContent.Trigger);
@@ -14,11 +15,12 @@
 
     /** Downloads extracted media */
     function DownloadMedia(Name, Url, Ext) {
-        browser.downloads.download({
-            filename: `${Name}.${Ext}`,
-            url: Url,
-            saveAs: true
-        });
+        const a = document.createElement('a');
+        a.download = `${Name}.${Ext}`;
+        a.href = Url;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
     }
 
     /** Handle audio extension */
