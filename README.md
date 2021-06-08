@@ -4,4 +4,6 @@ This browser extension allows you to download audio and music sheets from [Muses
 
 You can find it as browser extension on [Chrome web store](https://chrome.google.com/webstore/detail/musescore-downloader/nnekmplngdkmmgaoinpoahbikhfiedgj).
 
+Please use it only for studying purposes.
+
 <img src="https://raw.githubusercontent.com/ingui-n/musescore-downloader/master/screenshots/screenshot0.png" alt="Beautiful image with this extension"/>
