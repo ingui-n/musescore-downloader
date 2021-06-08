@@ -66,7 +66,7 @@
     }
 
     /** Calls main-background script */
-    function CallContent(Type, TriggerType) {
+    async function CallContent(Type, TriggerType) {
         let Message = {
             'MDMain': {
                 'Type': Type,
@@ -74,15 +74,20 @@
             }
         };
 
-        chrome.tabs.sendMessage(Tab.id, Message);
-        browser.runtime.onMessage.addListener(ResolveContentListener);
+        try {
+            await browser.tabs.sendMessage(Tab.id, Message);
+            browser.runtime.onMessage.addListener(ResolveContentListener);
+        } catch (e) {
+            PrintToPopup(false, 'You have to refresh Musescore window', 2);
+
+        }
     }
 
     /** Catches Errors */
     function ResolveContentListener(message) {
         if (typeof message === 'object' && message.MDContent) {
-            if (message.MDContent === '-') {
-                PrintToPopup(false, 'Something went wrong :(', 1);
+            if (message.MDContent.Type === 'Error') {
+                PrintToPopup(false, message.MDContent.Message, 1);
             }
         }
     }

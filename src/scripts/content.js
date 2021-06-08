@@ -3,6 +3,7 @@
 
     /** Resolve Listener */
     function ListenerHandler(message) {
+        console.log(message);
         if (typeof message === 'object' && message.MDMain) {
             if (message.MDMain.Type === 'Audio') {
                 ScanDivs('Audio') ? ScanAudio(message.MDMain.Trigger) : CallMain('-');
@@ -25,7 +26,10 @@
         for (let i = 0; i < ClassList.length; i++) {
             const Element = document.querySelector(`.${ClassList[i]}`);
 
-            if (!Element) return false;
+            if (!Element) {
+                CallMain('Error', 'Musescore changed configuration. Extension is now like: w8what?');
+                return false;
+            }
         }
         return true;
     }
@@ -62,7 +66,7 @@
             if (Pages.length !== PagesDivs.length) {
                 if (Date.now() - StartTime > 100000) {
                     KillScan();
-                    CallMain('-');
+                    CallMain('Error', 'Cannot find any pages');
                     return;
                 }
 
@@ -107,6 +111,7 @@
             if (Counter < 0)
                 clearInterval(ScanInterval);
 
+            CallMain('Error', 'Cannot find any audio');
             return false;
         }
 
@@ -122,8 +127,9 @@
             if (PlayBtn && PlayBtn.type === 'button') break;
         }
 
-        if (!PlayBtn)
-            CallMain('-');
+        if (!PlayBtn) {
+            CallMain('Error', 'Cannot find any audio');
+        }
 
         PlayBtn.click();
         PlayBtn.click();
@@ -138,16 +144,19 @@
         for (let i = 0; i < find.length; i++) {
             SheetName = SheetName.replace(find[i], '');
         }
-        return SheetName.trim();
+        return SheetName.trim() === '' ? 'Noname' : SheetName.trim();
     }
 
     /** Returns message to main.js */
     function CallMain(Type, SheetName, Links, TriggerType) {
         let Message;
 
-        if (Type === '-') {
+        if (Type === 'Error') {
             Message = {
-                'MDContent': '-'
+                'MDContent': {
+                    'Type': 'Error',
+                    'Message': SheetName
+                }
             };
         } else if (Type === 'Sheet' || Type === 'Audio') {
             SheetName = TrimSheetName(SheetName);
