@@ -3,35 +3,13 @@
 
     /** Resolve Listener */
     function ListenerHandler(message) {
-        console.log(message);
         if (typeof message === 'object' && message.MDMain) {
             if (message.MDMain.Type === 'Audio') {
-                ScanDivs('Audio') ? ScanAudio(message.MDMain.Trigger) : CallMain('-');
+                ScanAudio(message.MDMain.Trigger);
             } else if (message.MDMain.Type === 'Sheet') {
-                ScanDivs('Sheet') ? ScanSheet(message.MDMain.Trigger) : CallMain('-');
+                ScanSheet(message.MDMain.Trigger);
             }
         }
-    }
-
-    /** Test if is on website all needed elements */
-    function ScanDivs(Type) {
-        let ClassList;
-
-        if (Type === 'Sheet') {
-            ClassList = ['_2_Ppp', 'vAVs3', 'NEej-', '_5tn-M', 'JQKO_'];
-        } else if (Type === 'Audio') {
-            ClassList = ['NEej-'];
-        }
-
-        for (let i = 0; i < ClassList.length; i++) {
-            const Element = document.querySelector(`.${ClassList[i]}`);
-
-            if (!Element) {
-                CallMain('Error', 'Musescore changed configuration. Extension is now like: w8what?');
-                return false;
-            }
-        }
-        return true;
     }
 
     /** Scans web for sheet pages */
@@ -40,17 +18,15 @@
 
         /** Allows to see all pages without !rendering */
         function GetPages() {
-            SuperDiv.style.height = '1000000px';
-            const PagesDiv = document.querySelectorAll('._2_Ppp');
-
+            const images = document.querySelectorAll('img');
             let Urls = [];
-            for (let i = 0; i < PagesDiv.length; i++) {
-                if (typeof PagesDiv[i].src !== 'string') {
-                    return false;
-                }
-                Urls.push(PagesDiv[i].src);
 
+            for (let i = 0; i < images.length; i++) {
+                if (images[i].src !== undefined && images[i].src.startsWith('https://s3.ultimate-guitar.com/musescore.scoredata/g/') || images[i].src.startsWith('https://musescore.com/static/musescore/scoredata/g/')) {
+                    Urls.push(images[i].src);
+                }
             }
+
             return Urls.filter(Boolean);
         }
 
@@ -61,31 +37,32 @@
                 clearInterval(interval);
             }
 
-            const PagesDivs = document.querySelectorAll('.vAVs3');
+            let Pages = GetPages();
 
-            if (Pages.length !== PagesDivs.length) {
+            if (Pages.length.toString() === PagesCount.toString()) {
+                KillScan();
+                CallMain('Sheet', SheetName, Pages, TriggerType);
+            } else {
                 if (Date.now() - StartTime > 100000) {
                     KillScan();
                     CallMain('Error', 'Cannot find any pages');
-                    return;
                 }
-
-                Pages = GetPages();
-            } else {
-                KillScan();
-
-                const SheetName = document.querySelector('.NEej-').textContent;
-
-                CallMain('Sheet', SheetName, Pages, TriggerType);
             }
         }
 
-        let SuperDiv = document.querySelector('._5tn-M');
-        let targetDiv = document.querySelector('.JQKO_');
-        let Pages = [];
+        let SuperDiv = document.querySelector('.react-container').firstChild;
+        SuperDiv.style.height = '1000000px';
 
-        targetDiv.scrollTo(0, 0);
+        const SheetName = document.querySelector('meta[property="og:title"]').content.toLowerCase();
+        const images = document.querySelectorAll('img');
+        let PagesCount = 0;
 
+        for (let i = 0; i < images.length; i++) {
+            if (images[i].src !== undefined && images[i].src.startsWith('https://s3.ultimate-guitar.com/musescore.scoredata/g/') || images[i].src.startsWith('https://musescore.com/static/musescore/scoredata/g/')) {
+                PagesCount = images[i].alt.match(/(\d+) pages$/)[1];
+                break;
+            }
+        }
         let interval = setInterval(TriggerGetPages, 100);
     }
 
@@ -94,7 +71,7 @@
 
         /** Test is is link on website */
         function ScanAudioDiv() {
-            const SheetName = document.querySelector('.NEej-').textContent;
+            const SheetName = document.querySelector('meta[property="og:title"]').content;
             let Audios = document.querySelectorAll('audio');
 
             for (let i = 0; i < Audios.length; i++) {
@@ -115,24 +92,18 @@
             return false;
         }
 
-        let PlayBtn, Counter = 250, ScanInterval;
+        let Counter = 250, ScanInterval;
 
         if (ScanAudioDiv()) return;
 
-        const SuperBtnClassList = ['_3aSWK', '_3RNhl', '_39f0R', '_1ub-x', '_2rQms', '_1W_LO', '_3GQmO', '_2wqMT'];
+        const PlayBtn = document.querySelector('button[title="Toggle Play"]');
 
-        for (let i = 0; i < SuperBtnClassList.length; i++) {
-            PlayBtn = document.querySelectorAll(`.${SuperBtnClassList[i]}`)[1];
-
-            if (PlayBtn && PlayBtn.type === 'button') break;
-        }
+        PlayBtn.click();
+        PlayBtn.click();
 
         if (!PlayBtn) {
             CallMain('Error', 'Cannot find any audio');
         }
-
-        PlayBtn.click();
-        PlayBtn.click();
 
         ScanInterval = setInterval(ScanAudioDiv, 200);
     }

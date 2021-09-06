@@ -3,7 +3,6 @@
 
     /** Resolves listener from content.js */
     async function ResolveListener(message) {
-        console.log(message);
         if (typeof message === 'object' && message.MDContent) {
             if (message.MDContent.Type === 'Audio') {
                 HandleAudio(message.MDContent.Name, message.MDContent.Urls, message.MDContent.Trigger);
