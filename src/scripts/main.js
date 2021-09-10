@@ -79,7 +79,6 @@
             browser.runtime.onMessage.addListener(ResolveContentListener);
         } catch (e) {
             PrintToPopup(false, 'You have to refresh Musescore window', 2);
-
         }
     }
 
