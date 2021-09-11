@@ -36,8 +36,8 @@
     /** Prints website message */
     function PrintToPopup(PrintSolver, Message, MessageLen) {
         const html = document.querySelector('html');
-        const body = document.querySelector('body');
-        const dContent = document.querySelector('.content');
+        const body = document.querySelector('.content');
+        const dContent = document.querySelector('.fun__content');
         const pMessage = document.querySelector('.message');
 
         pMessage.classList.forEach(value => {
@@ -62,7 +62,38 @@
 
     /** Returns content div */
     function GetContentDiv() {
-        return document.querySelector('.content').cloneNode(true);
+        return document.querySelector('.fun__content').cloneNode(true);
+    }
+
+    function SetPseudoLoading(message) {
+        PrintToPopup(false, message, 1);
+
+        const pre = document.querySelector('.message-loading');
+
+        let direction = false;
+        let i = 0;
+
+        loadingInterval = setInterval(() => {
+            let dotsCount = i % 8;
+            let spacesCount = 7 - dotsCount;
+
+            let dotsString = '.'.repeat(dotsCount);
+            let spacesString = ' '.repeat(spacesCount);
+
+            pre.textContent = direction ? dotsString + spacesString : spacesString + dotsString;
+
+            if (i === 7 || i === 0) {
+                direction = !direction;
+                i = direction ? 0 : 7;
+            }
+
+            direction ? i++ : i--;
+        }, 85);
+    }
+
+    function StopPseudoLoading() {
+        clearInterval(loadingInterval);
+        document.querySelector('.message-loading').textContent = '';
     }
 
     /** Calls main-background script */
@@ -74,28 +105,41 @@
             }
         };
 
+        SetPseudoLoading('Please wait');
+
         try {
             await browser.tabs.sendMessage(Tab.id, Message);
             browser.runtime.onMessage.addListener(ResolveContentListener);
         } catch (e) {
-            PrintToPopup(false, 'You have to refresh Musescore window', 2);
+            PrintToPopup(false, 'Please refresh window with the music sheet', 2);
         }
     }
 
     /** Catches Errors */
     function ResolveContentListener(message) {
+        if (message === 'MDFinished') {
+            StopPseudoLoading();
+            PrintToPopup(true);
+            return;
+        }
+
         if (typeof message === 'object' && message.MDContent) {
             if (message.MDContent.Type === 'Error') {
+                StopPseudoLoading();
                 PrintToPopup(false, message.MDContent.Message, 1);
             }
         }
     }
 
+    let loadingInterval;
     const SolverContent = GetContentDiv();
-    PrintToPopup(false, 'Initializing...', 1);
+
+    SetPseudoLoading('Initializing');
 
     const Tab = await GetTab();
     const IsUrlValid = TestUrl(Tab);
+
+    StopPseudoLoading();
 
     if (!IsUrlValid) {
         PrintToPopup(false, 'You have to open Musescore sheet!', 2);

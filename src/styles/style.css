@@ -29,7 +29,8 @@ html:after {
 
 body {
     display: flex;
-    justify-content: center;
+    flex-direction: column;
+    align-items: center;
     width: calc(-4px + var(--html-width));
     height: calc(-4px + var(--html-height));
     background: #1D1F20;
@@ -82,7 +83,6 @@ button {
     background: var(--color-backbround);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
-    height: 22px;
     background-size: 300% 300%;
     animation: var(--color-animation);
 }
@@ -126,12 +126,11 @@ button {
 }
 
 /** Message **/
-.message {
+.message, .message-loading {
     display: none;
-    width: inherit;
     font-size: 17px;
+    max-width: 230px;
     text-align: center;
-    position: absolute;
     background: var(--color-backbround);
     animation: var(--color-animation);
     background-size: 300% 300%;
@@ -139,12 +138,14 @@ button {
     -webkit-background-clip: text;
 }
 
+.message-loading {
+    display: block;
+}
+
 .message-1-line {
     display: block;
-    top: 42px;
 }
 
 .message-2-line {
     display: block;
-    top: 40px;
 }
