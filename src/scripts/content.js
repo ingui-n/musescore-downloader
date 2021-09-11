@@ -123,7 +123,7 @@
             if (Counter < 0)
                 clearInterval(ScanInterval);
 
-            CallMain('Error', 'Cannot find any audio');
+            CallMain('Error', 'Something went wrong');
             return false;
         }
 
@@ -137,7 +137,7 @@
         PlayBtn.click();
 
         if (!PlayBtn) {
-            CallMain('Error', 'Cannot find any audio');
+            CallMain('Error', 'Something went wrong');
         }
 
         ScanInterval = setInterval(ScanAudioDiv, 200);
