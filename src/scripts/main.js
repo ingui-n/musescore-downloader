@@ -16,11 +16,21 @@
 
     /** Check URL if is MOODLE */
     function TestUrl(Tab) {
-        const url = /^https:\/\/musescore\.com(\/[a-zA-Z0-9-_]+){2,4}$/.exec(Tab.url);
-        const title = /\) \| Musescore\.com$/.exec(Tab.title);
-        const titleIncludes = /Sheet music for /.exec(Tab.title);
+        return /^https?:\/\/musescore\.com\/(user\/\d+\/scores\/\w+|\w+\/[\w-]+)$/.exec(Tab.url) !== null;
+    }
 
-        return url && title && titleIncludes;
+    async function TestHTML() {
+        await CallContent('HTMLTest', null, false);
+
+        function timeout() {
+            if (IsHTMLContentValid === undefined) {
+                setTimeout(timeout, 500);
+            } else {
+                startPopup();
+            }
+        }
+
+        timeout();
     }
 
     /** Resets background color animation */
@@ -97,7 +107,7 @@
     }
 
     /** Calls main-background script */
-    async function CallContent(Type, TriggerType) {
+    async function CallContent(Type, TriggerType = null, setLoading = true) {
         let Message = {
             'MDMain': {
                 'Type': Type,
@@ -105,13 +115,22 @@
             }
         };
 
-        SetPseudoLoading('Please wait');
+        if (setLoading)
+            SetPseudoLoading('Please wait');
+
+        try {
+            await browser.tabs.sendMessage(Tab.id, '');
+        } catch (e) {
+            StopPseudoLoading();
+            return PrintToPopup(false, `Please refresh the page.`, 1);
+        }
 
         try {
             await browser.tabs.sendMessage(Tab.id, Message);
             browser.runtime.onMessage.addListener(ResolveContentListener);
         } catch (e) {
-            PrintToPopup(false, 'Please refresh window with the music sheet', 2);
+            StopPseudoLoading();
+            PrintToPopup(false, `Please open a music sheet.`, 1);
         }
     }
 
@@ -127,40 +146,52 @@
             if (message.MDContent.Type === 'Error') {
                 StopPseudoLoading();
                 PrintToPopup(false, message.MDContent.Message, 1);
+            } else if (message.MDContent.Type === 'HTMLTest') {
+                IsHTMLContentValid = message.MDContent.isHTMLValid ?? false;
             }
         }
     }
 
-    let loadingInterval;
+    let loadingInterval,
+        IsHTMLContentValid,
+        StartedPopupAlready = false;
+
     const SolverContent = GetContentDiv();
 
     SetPseudoLoading('Initializing');
 
     const Tab = await GetTab();
     const IsUrlValid = TestUrl(Tab);
+    await TestHTML();
 
-    StopPseudoLoading();
+    function startPopup() {
+        if (!StartedPopupAlready)
+            StartedPopupAlready = true;
+        else
+            return;
 
-    if (!IsUrlValid) {
-        PrintToPopup(false, 'You have to open Musescore sheet!', 2);
-        return;
+        StopPseudoLoading();
+
+        if (!IsUrlValid || !IsHTMLContentValid) {
+            return PrintToPopup(false, 'You have to open Musescore sheet!', 2);
+        }
+
+        PrintToPopup(true);
+
+        const SheetOpenB = document.querySelector('.sheet__open');
+        const SheetDownloadB = document.querySelector('.sheet__download');
+        const AudioDownloadB = document.querySelector('.audio__download');
+
+        SheetOpenB.addEventListener('click', () => {
+            CallContent('Sheet', 'Open');
+        });
+
+        SheetDownloadB.addEventListener('click', () => {
+            CallContent('Sheet', 'Download');
+        });
+
+        AudioDownloadB.addEventListener('click', () => {
+            CallContent('Audio', 'Download');
+        });
     }
-
-    PrintToPopup(true);
-
-    const SheetOpenB = document.querySelector('.sheet__open');
-    const SheetDownloadB = document.querySelector('.sheet__download');
-    const AudioDownloadB = document.querySelector('.audio__download');
-
-    SheetOpenB.addEventListener('click', () => {
-        CallContent('Sheet', 'Open');
-    });
-
-    SheetDownloadB.addEventListener('click', () => {
-        CallContent('Sheet', 'Download');
-    });
-
-    AudioDownloadB.addEventListener('click', () => {
-        CallContent('Audio', 'Download');
-    });
 }();

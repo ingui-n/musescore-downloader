@@ -8,6 +8,8 @@
                 ScanAudio(message.MDMain.Trigger);
             } else if (message.MDMain.Type === 'Sheet') {
                 ScanSheet(message.MDMain.Trigger);
+            } else if (message.MDMain.Type === 'HTMLTest') {
+                TestHTML();
             }
         }
     }
@@ -103,44 +105,50 @@
 
     /** Gets audio from website */
     function ScanAudio(TriggerType) {
+        function FindAudio() {
+            Audios = document.querySelectorAll('audio');
 
-        /** Test is is link on website */
-        function ScanAudioDiv() {
-            const SheetName = document.querySelector('meta[property="og:title"]').content;
-            let Audios = document.querySelectorAll('audio');
+            for (const audio of Audios) {
+                IsAudio = /^https:\/\/s3\.ultimate-guitar\.com\/musescore\.scoredata/.exec(audio.src) !== null;
 
-            for (let i = 0; i < Audios.length; i++) {
-                const IsAudio = /^https:\/\/s3\.ultimate-guitar\.com\/musescore\.scoredata\/g\/\w+\/score\.\w+\?/.exec(Audios[i].src);
-
-                if (IsAudio) {
-                    clearInterval(ScanInterval);
-                    CallMain('Audio', SheetName, Audios[i].src, TriggerType);
-                    return true;
-                }
+                if (IsAudio)
+                    return CallMain('Audio', SheetName, audio.src, TriggerType);
             }
-            Counter--;
 
-            if (Counter < 0)
-                clearInterval(ScanInterval);
+            YouTubeScript = document.querySelectorAll('script[id="www-widgetapi-script"]');
 
-            CallMain('Error', 'Something went wrong');
+            if (YouTubeScript.length > 0) {
+                return CallMain('Error', 'Sorry, I can not download YouTube content.');
+            }
+
+            MaxTries--;
+
+            if (MaxTries > 0)
+                return setTimeout(FindAudio, 100);
+
+            CallMain('Error', 'Downloading audio timed out :\\');
             return false;
         }
 
-        let Counter = 250, ScanInterval;
-
-        if (ScanAudioDiv()) return;
-
+        let YouTubeScript = document.querySelectorAll('script[id="www-widgetapi-script"]');
+        const SheetName = document.querySelector('meta[property="og:title"]').content;
         const PlayBtn = document.querySelector('button[title="Toggle Play"]');
+        let Audios = document.querySelectorAll('audio');
 
-        PlayBtn.click();
-        PlayBtn.click();
-
-        if (!PlayBtn) {
-            CallMain('Error', 'Something went wrong');
+        if (YouTubeScript.length > 0) {
+            return CallMain('Error', 'Sorry, I can not download YouTube content.');
         }
 
-        ScanInterval = setInterval(ScanAudioDiv, 200);
+        if (!PlayBtn)
+            return CallMain('Error', 'Can not find the audio play button.');
+
+        PlayBtn.click();
+        PlayBtn.click();
+
+        let IsAudio = false,
+            MaxTries = 150;
+
+        FindAudio();
     }
 
     /** Trims bad characters for Windows users */
@@ -159,24 +167,44 @@
 
         if (Type === 'Error') {
             Message = {
-                'MDContent': {
-                    'Type': 'Error',
-                    'Message': SheetName
+                MDContent: {
+                    Type: 'Error',
+                    Message: SheetName
                 }
             };
         } else if (Type === 'Sheet' || Type === 'Audio') {
             SheetName = TrimSheetName(SheetName);
             Message = {
-                'MDContent': {
-                    'Type': Type,
-                    'Name': SheetName,
-                    'Urls': Links,
-                    'Trigger': TriggerType
+                MDContent: {
+                    Type: Type,
+                    Name: SheetName,
+                    Urls: Links,
+                    Trigger: TriggerType
+                }
+            };
+        } else if (Type === 'HTMLTest') {
+            Message = {
+                MDContent: {
+                    Type: Type,
+                    isHTMLValid: SheetName
                 }
             };
         }
 
         browser.runtime.sendMessage(Message);
+    }
+
+    function TestHTML() {
+        let MType = document.querySelector('meta[property="og:type"]').content === 'musescore:score';
+        let MSite = document.querySelector('meta[property="og:site_name"]').content === 'Musescore.com';
+        let MTitle = document.querySelector('meta[property="og:title"]').content !== undefined;
+        let MUrl = document.querySelector('meta[property="og:url"]').content !== undefined;
+        let MDescription = document.querySelector('meta[property="og:description"]').content !== undefined;
+        let MImage = document.querySelector('meta[property="og:image"]').content !== undefined;
+
+        let IsAllValid = MType && MSite && MTitle && MUrl && MDescription && MImage;
+
+        setTimeout(() => CallMain('HTMLTest', IsAllValid), 50);
     }
 
     browser.runtime.onMessage.addListener(ListenerHandler);
