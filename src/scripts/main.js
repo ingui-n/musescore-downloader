@@ -162,7 +162,13 @@
 
     const Tab = await GetTab();
     const IsUrlValid = TestUrl(Tab);
-    await TestHTML();
+
+    if (IsUrlValid) {
+        await TestHTML();
+    } else {
+        StopPseudoLoading();
+        return PrintToPopup(false, 'You need to open a Musescore sheet.', 2);
+    }
 
     function startPopup() {
         if (!StartedPopupAlready)
@@ -173,7 +179,7 @@
         StopPseudoLoading();
 
         if (!IsUrlValid || !IsHTMLContentValid) {
-            return PrintToPopup(false, 'You have to open Musescore sheet!', 2);
+            return PrintToPopup(false, 'You need to open a Musescore sheet.', 2);
         }
 
         PrintToPopup(true);
