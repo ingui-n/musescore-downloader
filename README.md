@@ -1,9 +1,28 @@
-# Musescore Audio & Sheet Downloader
+# Musescore Downloader
 
-This browser extension allows you to download audio and music sheets from [Musescore](https://musescore.com/). You can choose between opening a sheet in PDF or directly downloading it (of course in PDF). For audio, there is only the possibility of downloading.
+This browser extension allows you to download:
+* audio (mp3/wav/ogg)*
+* music sheets (pdf)
+* midi (mid/midi)*
 
-You can find it as browser extension on [Chrome web store](https://chrome.google.com/webstore/detail/musescore-downloader/nnekmplngdkmmgaoinpoahbikhfiedgj).
+*Depends on music sheet
 
-Please use it only for studying purposes.
+<img src="https://raw.githubusercontent.com/ingui-n/musescore-downloader/master/screenshots/extension1.png" alt="Beautiful image of the extension"/>
 
-<img src="https://raw.githubusercontent.com/ingui-n/musescore-downloader/master/screenshots/screenshot0.png" alt="Beautiful image with this extension"/>
+Usage:
+1. Install extension from [Chrome web store](https://chrome.google.com/webstore/detail/musescore-downloader/nnekmplngdkmmgaoinpoahbikhfiedgj)
+2. Go to [Musescore.com](https://musescore.com/)
+3. Open a music sheet
+4. Click to Musescore Downloader icon
+5. Select what you want to do
+
+Supported browsers:
+* Chrome
+* Opera
+* Brave
+* Vivaldi
+* (basically all Chromium browsers)
+
+Please use this extension only for studying purposes.
+
+<img src="https://raw.githubusercontent.com/ingui-n/musescore-downloader/master/screenshots/screenshot1.png" alt="Beautiful image with extension on musescore website"/>
