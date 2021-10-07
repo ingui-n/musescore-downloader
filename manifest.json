@@ -2,10 +2,11 @@
   "manifest_version": 2,
   "name": "Musescore Downloader",
   "description": "This extension allows you to download sheets and audio.",
-  "version": "0.2.2",
+  "version": "0.3.0",
   "permissions": [
     "https://musescore.com/*",
-    "https://s3.ultimate-guitar.com/musescore.scoredata/g/*"
+    "https://s3.ultimate-guitar.com/musescore.scoredata/g/*",
+    "webRequest"
   ],
   "icons": {
     "16": "./src/images/pic16.png",

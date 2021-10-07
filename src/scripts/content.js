@@ -4,102 +4,76 @@
     /** Resolve Listener */
     function ListenerHandler(message) {
         if (typeof message === 'object' && message.MDMain) {
-            if (message.MDMain.Type === 'Audio') {
-                ScanAudio(message.MDMain.Trigger);
-            } else if (message.MDMain.Type === 'Sheet') {
-                ScanSheet(message.MDMain.Trigger);
-            } else if (message.MDMain.Type === 'HTMLTest') {
-                TestHTML();
+            let mess = message.MDMain;
+
+            switch (mess.Type) {
+                case 'Audio':
+                    return ScanAudio(mess.Trigger);
+                case 'Sheet' :
+                    return ScanSheet(mess.Trigger);
+                case 'Midi' :
+                    return ScanMidi(mess.Trigger);
+                case 'HTMLTest' :
+                    return TestHTML();
             }
         }
     }
 
+    function GetScoreName() {
+        return TrimSheetName(document.querySelector('meta[property="og:title"]').content.toLowerCase());
+    }
+
+    function GetScoreUrl() {
+        return document.querySelector('meta[property="og:url"]').content;
+    }
+
     /** Scans web for sheet pages */
     function ScanSheet(TriggerType) {
-        let StartTime = Date.now();
+        function ShowAllPages() {
+            let SuperDiv = doc.querySelector('.react-container').firstChild;
 
-        function createIframe() {
+            if (!SuperDiv) {
+                CallMain('Error', 'Sorry, cannot find some important data.');
+                return false;
+            }
+
+            SuperDiv.style.height = '1000000px';
+
+            setTimeout(() => SuperDiv.style.height = '', 500);
+
+            return true;
+        }
+
+        function CreateIframe() {
             if (document.querySelector('.MD_IF')) return;
 
             const ifr = document.createElement('iframe');
-            ifr.src = window.location.href;
+
+            ifr.src = GetScoreUrl();
             ifr.className = 'MD_IF';
             ifr.style.width = '990px';
             ifr.style.height = '150px';
             ifr.style.position = 'fixed';
             document.body.appendChild(ifr);
-        }
 
-        /** Allows to see all pages without !rendering */
-        function GetPages() {
-            const images = doc.querySelectorAll('img');
-            let Urls = [];
-
-            for (let i = 0; i < images.length; i++) {
-                if (images[i].src !== undefined && images[i].src.startsWith('https://s3.ultimate-guitar.com/musescore.scoredata/g/') || images[i].src.startsWith('https://musescore.com/static/musescore/scoredata/g/')) {
-                    Urls.push(images[i].src);
-                }
-            }
-
-            return Urls.filter(Boolean);
-        }
-
-        /** Calls function that gets url of the element */
-        function TriggerGetPages() {
-            function KillScan() {
-                SuperDiv.style.height = '';
-                clearInterval(interval);
-            }
-
-            const SheetName = doc.querySelector('meta[property="og:title"]').content.toLowerCase();
-            let SuperDiv = doc.querySelector('.react-container').firstChild;
-            SuperDiv.style.height = '1000000px';
-
-            let Pages = GetPages();
-
-            if (Pages.length.toString() === PagesCount.toString()) {
-                KillScan();
-                CallMain('Sheet', SheetName, Pages, TriggerType);
-            } else {
-                if (Date.now() - StartTime > 100000) {
-                    KillScan();
-                    CallMain('Error', 'Process toked too long.');
-                }
-            }
-        }
-
-        function getPagesCount(doc) {
-            const images = doc.querySelectorAll('img');
-
-            for (let i = 0; i < images.length; i++) {
-                if (images[i].src !== undefined && images[i].src.startsWith('https://s3.ultimate-guitar.com/musescore.scoredata/g/') || images[i].src.startsWith('https://musescore.com/static/musescore/scoredata/g/')) {
-                    return images[i].alt.match(/(\d+) pages$/)[1];
-                }
-            }
-
-            return 0;
+            return ifr;
         }
 
 
-        let doc = document, interval, PagesCount = 0;
+        let doc = document;
 
-        if (window.innerWidth > 965) {
-            PagesCount = getPagesCount(document);
+        if (window.innerWidth < 965) {
+            let ifr = CreateIframe();
 
-            interval = setInterval(TriggerGetPages, 100);
-        } else {
-            createIframe();
-
-            const interval2 = setInterval(() => {
+            ifr.addEventListener('load', () => {
                 doc = document.querySelector('.MD_IF').contentWindow.document;
 
-                PagesCount = getPagesCount(doc);
-
-                if (PagesCount !== 0 && doc.querySelector('meta[property="og:title"]')) {
-                    clearInterval(interval2);
-                    interval = setInterval(TriggerGetPages, 100);
-                }
-            }, 100);
+                if (ShowAllPages())
+                    setTimeout(() => CallBack('sheet', TriggerType), 800);
+            });
+        } else {
+            if (ShowAllPages())
+                setTimeout(() => CallBack('sheet', TriggerType), 800);
         }
     }
 
@@ -112,7 +86,7 @@
                 IsAudio = /^https:\/\/s3\.ultimate-guitar\.com\/musescore\.scoredata/.exec(audio.src) !== null;
 
                 if (IsAudio)
-                    return CallMain('Audio', SheetName, audio.src, TriggerType);
+                    return CallBack('audio', TriggerType);
             }
 
             YouTubeScript = document.querySelectorAll('script[id="www-widgetapi-script"]');
@@ -131,7 +105,6 @@
         }
 
         let YouTubeScript = document.querySelectorAll('script[id="www-widgetapi-script"]');
-        const SheetName = document.querySelector('meta[property="og:title"]').content;
         const PlayBtn = document.querySelector('button[title="Toggle Play"]');
         let Audios = document.querySelectorAll('audio');
 
@@ -153,43 +126,47 @@
 
     /** Trims bad characters for Windows users */
     function TrimSheetName(SheetName) {
-        const find = ['<', '>', '"', "'", '?', ':', '/', '\\', '|', '*'];
+        const Find = ['<', '>', '"', "'", '?', ':', '/', '\\', '|', '*'];
 
-        for (let i = 0; i < find.length; i++) {
-            SheetName = SheetName.replace(find[i], '');
+        for (let i = 0; i < Find.length; i++) {
+            SheetName = SheetName.replace(Find[i], '');
         }
         return SheetName.trim() === '' ? 'Noname' : SheetName.trim();
     }
 
     /** Returns message to main.js */
-    function CallMain(Type, SheetName, Links, TriggerType) {
+    function CallMain(Type, Mess) {
         let Message;
 
         if (Type === 'Error') {
             Message = {
                 MDContent: {
                     Type: 'Error',
-                    Message: SheetName
-                }
-            };
-        } else if (Type === 'Sheet' || Type === 'Audio') {
-            SheetName = TrimSheetName(SheetName);
-            Message = {
-                MDContent: {
-                    Type: Type,
-                    Name: SheetName,
-                    Urls: Links,
-                    Trigger: TriggerType
+                    Message: Mess
                 }
             };
         } else if (Type === 'HTMLTest') {
             Message = {
                 MDContent: {
                     Type: Type,
-                    isHTMLValid: SheetName
+                    isHTMLValid: Mess
                 }
             };
         }
+
+        if (Message)
+            browser.runtime.sendMessage(Message);
+    }
+
+    function CallBack(Type, Trigger) {
+        let Message = {
+            MDBack: {
+                Type: Type,
+                Name: GetScoreName(),
+                ScoreUrl: GetScoreUrl(),
+                Trigger: Trigger
+            }
+        };
 
         browser.runtime.sendMessage(Message);
     }
@@ -205,6 +182,40 @@
         let IsAllValid = MType && MSite && MTitle && MUrl && MDescription && MImage;
 
         setTimeout(() => CallMain('HTMLTest', IsAllValid), 50);
+    }
+
+    function ScanMidi(Trigger) {
+        let FullScreenBtn = document.querySelector('button[title="Toggle Fullscreen"]');
+        let WasPianoOpened = window.location.href.endsWith('/piano-tutorial');
+        let btn;
+
+        if (FullScreenBtn) {
+            try {
+                btn = FullScreenBtn.parentElement.parentElement.firstChild.firstChild;
+                btn.click();
+
+                if (WasPianoOpened)
+                    btn.click();
+
+                let i = 0;
+
+                let Interval = setInterval(() => {
+                    if (window.location.href.endsWith('/piano-tutorial')) {
+                        btn.click();
+                        clearInterval(Interval);
+
+                        return CallBack('midi', Trigger);
+                    } else if (i > 50) {
+                        clearInterval(Interval);
+
+                        return CallMain('Error', 'Downloading time out.');
+                    }
+                    i++
+                }, 500);
+            } catch (e) {
+                return CallMain('Error', 'Can not find the play button.');
+            }
+        }
     }
 
     browser.runtime.onMessage.addListener(ListenerHandler);

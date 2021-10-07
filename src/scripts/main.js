@@ -14,9 +14,9 @@
         return Tab[0];
     }
 
-    /** Check URL if is MOODLE */
+    /** Check URL if is URL valid */
     function TestUrl(Tab) {
-        return /^https?:\/\/musescore\.com\/(user\/\d+\/scores\/\w+|\w+\/[\w-]+)$/.exec(Tab.url) !== null;
+        return /^https?:\/\/musescore\.com\/(user\/\d+\/scores\/\w+|\w+\/[\w-]+|\S+)$/.exec(Tab.url) !== null;
     }
 
     async function TestHTML() {
@@ -109,9 +109,9 @@
     /** Calls main-background script */
     async function CallContent(Type, TriggerType = null, setLoading = true) {
         let Message = {
-            'MDMain': {
-                'Type': Type,
-                'Trigger': TriggerType
+            MDMain: {
+                Type: Type,
+                Trigger: TriggerType
             }
         };
 
@@ -167,7 +167,7 @@
         await TestHTML();
     } else {
         StopPseudoLoading();
-        return PrintToPopup(false, 'You need to open a Musescore sheet.', 2);
+        return PrintToPopup(false, 'Please open a Musescore sheet.', 2);
     }
 
     function startPopup() {
@@ -179,7 +179,7 @@
         StopPseudoLoading();
 
         if (!IsUrlValid || !IsHTMLContentValid) {
-            return PrintToPopup(false, 'You need to open a Musescore sheet.', 2);
+            return PrintToPopup(false, 'Please open a Musescore sheet.', 2);
         }
 
         PrintToPopup(true);
@@ -187,6 +187,7 @@
         const SheetOpenB = document.querySelector('.sheet__open');
         const SheetDownloadB = document.querySelector('.sheet__download');
         const AudioDownloadB = document.querySelector('.audio__download');
+        const MidiDownloadB = document.querySelector('.midi__download');
 
         SheetOpenB.addEventListener('click', () => {
             CallContent('Sheet', 'Open');
@@ -198,6 +199,10 @@
 
         AudioDownloadB.addEventListener('click', () => {
             CallContent('Audio', 'Download');
+        });
+
+        MidiDownloadB.addEventListener('click', () => {
+            CallContent('Midi', 'Download');
         });
     }
 }();
