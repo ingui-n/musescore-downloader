@@ -24,7 +24,7 @@
     }
 
     function GetScoreUrl() {
-        return document.querySelector('meta[property="og:url"]').content;
+        return document.querySelector('link[rel="canonical"]').href;
     }
 
     /** Scans web for sheet pages */
@@ -52,7 +52,7 @@
             ifr.src = GetScoreUrl();
             ifr.className = 'MD_IF';
             ifr.style.width = '990px';
-            ifr.style.height = '150px';
+            ifr.style.height = '8150px';
             ifr.style.position = 'fixed';
             document.body.appendChild(ifr);
 
@@ -126,11 +126,14 @@
 
     /** Trims bad characters for Windows users */
     function TrimSheetName(SheetName) {
-        const Find = ['<', '>', '"', "'", '?', ':', '/', '\\', '|', '*'];
+        const Find = ['<', '>', '"', "'", '“', '”', '?', ':', '/', '\\', '|', '*' , ',', '-'];
 
         for (let i = 0; i < Find.length; i++) {
             SheetName = SheetName.replace(Find[i], '');
         }
+
+        SheetName = SheetName.replaceAll(' ', '_');
+
         return SheetName.trim() === '' ? 'Noname' : SheetName.trim();
     }
 

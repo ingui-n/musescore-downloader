@@ -40,7 +40,7 @@
         const Ext = Url.match(/^https:\/\/s3\.ultimate-guitar\.com\/musescore\.scoredata\/g\/\w+\/score\.(\w+)\?/);
 
         if (Trigger === 'Download')
-            DownloadMedia(Name, Url, Ext ? Ext[1] : null);
+            DownloadMedia(Name, Url, Ext ? Ext[1] : 'mp3');
     }
 
     /** Makes PDF */
