@@ -139,43 +139,43 @@
     }
 
     function ExtractSheetURL(Url) {
-        let Match = /^https?:\/\/musescore\.com((\/[\w_-]+){1,7})$/.exec(Url);
+        let Match = /^https?:\/\/musescore\.com((\/[\w_-]+){1,7})/.exec(Url);
 
         return Match !== null ? Match[1] : undefined;
     }
 
     function SetURLToLog(details) {
         if (details.type !== 'main_frame')
-            return;
+            return false;
 
         let SheetURL = ExtractSheetURL(details.url);
 
-        if (SheetURL)
+        if (SheetURL) {
             Log[SheetURL] = {
                 audio: '',
                 midi: '',
                 sheet: []
             };
-    }
 
-    async function SetScoreId(Url) {
-        let ScoreId = /^https?:\/\/musescore\.com\/static\/musescore\/scoredata\/g\/(\w+)\/space\.jsonp\?revision=\d+&no-cache=\d+$/.exec(Url);
-
-        if (ScoreId !== null) {
-            const Tab = await GetTab();
-
-            let SheetURL = ExtractSheetURL(Tab.url);
-
-            if (SheetURL)
-                Log[SheetURL].id = ScoreId[1];
+            return SheetURL;
+        } else {
+            return false;
         }
     }
 
-    async function GetTab() {
-        const Query = {active: true, currentWindow: true};
-        let Tab = await browser.tabs.query(Query);
+    async function SetScoreId(Url, ScorePath) {
+        await fetch(Url)
+            .then(async res => {
+                if (res.ok) {
+                    let text = await res.text();
 
-        return Tab[0];
+                    let MatchScoreId = /content="https:\/\/musescore\.com\/static\/musescore\/scoredata\/g\/(\w+)\/score_0\.\w{3}@/.exec(text);
+
+                    if (MatchScoreId !== null) {
+                        Log[ScorePath].id = MatchScoreId[1];
+                    }
+                }
+            });
     }
 
     function SetScoreElements(Url) {
@@ -211,9 +211,13 @@
     }
 
     async function LogScores(details) {
-        SetURLToLog(details);
-        await SetScoreId(details.url);
-        SetScoreElements(details.url);
+        let IsItScoreUrl = SetURLToLog(details);
+
+        if (IsItScoreUrl === false) {
+            SetScoreElements(details.url);
+        } else if (typeof IsItScoreUrl === 'string') {
+            await SetScoreId(details.url, IsItScoreUrl);
+        }
     }
 
     let Log = {};
