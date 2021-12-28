@@ -4,7 +4,7 @@
     --html-width: 280px;
     --html-height: 165px;
     --color-animation: background-migration 3s ease alternate infinite;
-    --color-backbround: linear-gradient(60deg, #f79533, #f37055, #ef4e7b, #a166ab, #5073b8, #1098ad, #07b39b, #6fba82);
+    --color-background: linear-gradient(60deg, #f79533, #f37055, #ef4e7b, #a166ab, #5073b8, #1098ad, #07b39b, #6fba82);
 }
 
 html {
@@ -20,7 +20,7 @@ html:after {
     top: 0;
     width: var(--html-width);
     height: var(--html-height);
-    background: var(--color-backbround);
+    background: var(--color-background);
     animation: var(--color-animation);
     background-size: 300% 300%;
     z-index: -1;
@@ -50,7 +50,7 @@ button {
     outline: none;
 }
 
-.img__musescore {
+.header__image {
     height: 29px;
     padding-right: 5px;
     margin-top: -4px;
@@ -68,7 +68,7 @@ button {
     }
 }
 
-.d__title {
+.header__div {
     display: flex;
     justify-content: center;
     padding-bottom: 16px;
@@ -76,11 +76,11 @@ button {
     padding-right: 5px;
 }
 
-.h__title {
+.header__title {
     margin: -1.6px 0 0;
     font-size: 24px;
     color: white;
-    background: var(--color-backbround);
+    background: var(--color-background);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-size: 300% 300%;
@@ -114,7 +114,7 @@ button {
     width: 120px;
     left: -2px;
     top: -2px;
-    background: var(--color-backbround);
+    background: var(--color-background);
     animation: var(--color-animation);
     background-size: 300% 300%;
     z-index: -1;
@@ -123,29 +123,30 @@ button {
 .btn__fun:hover {
     -webkit-background-clip: text;
     -webkit-text-fill-color: white;
+    color: #1D1F20;
 }
 
 /** Message **/
-.message, .message-loading {
+.message__text, .message__loading {
     display: none;
     font-size: 17px;
     max-width: 230px;
     text-align: center;
-    background: var(--color-backbround);
+    background: var(--color-background);
     animation: var(--color-animation);
     background-size: 300% 300%;
     -webkit-text-fill-color: transparent;
     -webkit-background-clip: text;
 }
 
-.message-loading {
+.message__loading, .message-block {
     display: block;
 }
 
-.message-1-line {
-    display: block;
+.btn__refresh {
+    margin-top: 5px;
 }
 
-.message-2-line {
-    display: block;
+.no-margin {
+    margin: 0;
 }

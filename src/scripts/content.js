@@ -2,54 +2,52 @@
     'use strict';
 
     /** Resolve Listener */
-    function ListenerHandler(message) {
-        if (typeof message === 'object' && message.MDMain) {
-            let mess = message.MDMain;
+    const listenerHandler = message => {
+        if (typeof message === 'object' && message.MDContent) {
+            let mess = message.MDContent;
 
-            switch (mess.Type) {
-                case 'Audio':
-                    return ScanAudio(mess.Trigger);
-                case 'Sheet' :
-                    return ScanSheet(mess.Trigger);
-                case 'Midi' :
-                    return ScanMidi(mess.Trigger);
-                case 'HTMLTest' :
-                    return TestHTML();
+            switch (mess.type) {
+                case 'audio':
+                    return scanAudio(mess.trigger);
+                case 'sheet' :
+                    return scanSheet(mess.trigger);
+                case 'midi' :
+                    return scanMidi(mess.trigger);
             }
         }
-    }
+    };
 
-    function GetScoreName() {
-        return TrimSheetName(document.querySelector('meta[property="og:title"]').content.toLowerCase());
-    }
+    const getScoreName = () => {
+        return trimSheetName(document.querySelector('meta[property="og:title"]').content.toLowerCase());
+    };
 
-    function GetScoreUrl() {
+    const getScoreUrl = () => {
         return document.querySelector('link[rel="canonical"]').href;
-    }
+    };
 
     /** Scans web for sheet pages */
-    function ScanSheet(TriggerType) {
-        function ShowAllPages() {
-            let SuperDiv = doc.querySelector('.react-container').firstChild;
+    const scanSheet = triggerType => {
+        const showAllPages = () => {
+            let superDiv = doc.querySelector('.react-container').firstChild;
 
-            if (!SuperDiv) {
-                CallMain('Error', 'Sorry, cannot find some important data.');
+            if (!superDiv) {
+                callMain('error', 'Sorry, cannot find some important data.');
                 return false;
             }
 
-            SuperDiv.style.height = '1000000px';
+            superDiv.style.height = '1000000px';
 
-            setTimeout(() => SuperDiv.style.height = '', 500);
+            setTimeout(() => superDiv.style.height = '', 500);
 
             return true;
-        }
+        };
 
-        function CreateIframe() {
+        const createIframe = () => {
             if (document.querySelector('.MD_IF')) return;
 
             const ifr = document.createElement('iframe');
 
-            ifr.src = GetScoreUrl();
+            ifr.src = getScoreUrl();
             ifr.className = 'MD_IF';
             ifr.style.width = '990px';
             ifr.style.height = '8150px';
@@ -57,169 +55,144 @@
             document.body.appendChild(ifr);
 
             return ifr;
-        }
+        };
 
 
         let doc = document;
 
         if (window.innerWidth < 965) {
-            let ifr = CreateIframe();
+            let ifr = createIframe();
 
             ifr.addEventListener('load', () => {
                 doc = document.querySelector('.MD_IF').contentWindow.document;
 
-                if (ShowAllPages())
-                    setTimeout(() => CallBack('sheet', TriggerType), 800);
+                if (showAllPages())
+                    setTimeout(() => callBack('sheet', triggerType), 800);
             });
         } else {
-            if (ShowAllPages())
-                setTimeout(() => CallBack('sheet', TriggerType), 800);
+            if (showAllPages())
+                setTimeout(() => callBack('sheet', triggerType), 800);
         }
-    }
+    };
 
     /** Gets audio from website */
-    function ScanAudio(TriggerType) {
-        function FindAudio() {
-            Audios = document.querySelectorAll('audio');
+    const scanAudio = triggerType => {
+        const findAudio = () => {
+            audios = document.querySelectorAll('audio');
 
-            for (const audio of Audios) {
-                IsAudio = /^https:\/\/s3\.ultimate-guitar\.com\/musescore\.scoredata/.exec(audio.src) !== null;
+            for (const audio of audios) {
+                isAudio = /^https:\/\/s3\.ultimate-guitar\.com\/musescore\.scoredata/.exec(audio.src) !== null;
 
-                if (IsAudio)
-                    return CallBack('audio', TriggerType);
+                if (isAudio)
+                    return callBack('audio', triggerType);
             }
 
-            YouTubeScript = document.querySelectorAll('script[id="www-widgetapi-script"]');
+            youTubeScript = document.querySelectorAll('script[id="www-widgetapi-script"]');
 
-            if (YouTubeScript.length > 0) {
-                return CallMain('Error', 'Sorry, I can not download YouTube content.');
+            if (youTubeScript.length > 0) {
+                return callMain('error', 'Sorry, I can not download YouTube content.');
             }
 
-            MaxTries--;
+            maxTries--;
 
-            if (MaxTries > 0)
-                return setTimeout(FindAudio, 100);
+            if (maxTries > 0)
+                return setTimeout(findAudio, 100);
 
-            CallMain('Error', 'Downloading audio timed out :\\');
-            return false;
+            callMain('error', 'Downloading audio timed out :\\');
+        };
+
+        let youTubeScript = document.querySelectorAll('script[id="www-widgetapi-script"]');
+        let playBtn = document.querySelector('button[title="Toggle Play"]');
+        let audios = document.querySelectorAll('audio');
+
+        if (youTubeScript.length > 0) {
+            return callMain('error', 'Sorry, I can not download YouTube content.');
         }
 
-        let YouTubeScript = document.querySelectorAll('script[id="www-widgetapi-script"]');
-        const PlayBtn = document.querySelector('button[title="Toggle Play"]');
-        let Audios = document.querySelectorAll('audio');
+        if (!playBtn)
+            return callMain('error', 'Can not find the audio play button.');
 
-        if (YouTubeScript.length > 0) {
-            return CallMain('Error', 'Sorry, I can not download YouTube content.');
-        }
+        playBtn.click();
+        playBtn.click();
 
-        if (!PlayBtn)
-            return CallMain('Error', 'Can not find the audio play button.');
+        let isAudio = false,
+            maxTries = 150;
 
-        PlayBtn.click();
-        PlayBtn.click();
-
-        let IsAudio = false,
-            MaxTries = 150;
-
-        FindAudio();
-    }
+        findAudio();
+    };
 
     /** Trims bad characters for Windows users */
-    function TrimSheetName(SheetName) {
-        const Find = ['<', '>', '"', "'", '“', '”', '?', ':', '/', '\\', '|', '*' , ',', '-'];
+    const trimSheetName = sheetName => {
+        const find = ['<', '>', '"', "'", '“', '”', '?', ':', '/', '\\', '|', '*', ',', '-'];
 
-        for (let i = 0; i < Find.length; i++) {
-            SheetName = SheetName.replace(Find[i], '');
+        for (let i = 0; i < find.length; i++) {
+            sheetName = sheetName.replace(find[i], '');
         }
 
-        SheetName = SheetName.replaceAll(' ', '_');
+        sheetName = sheetName.replaceAll(' ', '_');
 
-        return SheetName.trim() === '' ? 'Noname' : SheetName.trim();
-    }
+        return sheetName.trim() === '' ? 'Noname' : sheetName.trim();
+    };
 
     /** Returns message to main.js */
-    function CallMain(Type, Mess) {
-        let Message;
-
-        if (Type === 'Error') {
-            Message = {
-                MDContent: {
-                    Type: 'Error',
-                    Message: Mess
-                }
-            };
-        } else if (Type === 'HTMLTest') {
-            Message = {
-                MDContent: {
-                    Type: Type,
-                    isHTMLValid: Mess
-                }
-            };
-        }
-
-        if (Message)
-            browser.runtime.sendMessage(Message);
-    }
-
-    function CallBack(Type, Trigger) {
-        let Message = {
-            MDBack: {
-                Type: Type,
-                Name: GetScoreName(),
-                ScoreUrl: GetScoreUrl(),
-                Trigger: Trigger
+    const callMain = (type, mess) => {
+        let message = {
+            MDMain: {
+                type: type,
+                message: mess
             }
         };
 
-        browser.runtime.sendMessage(Message);
-    }
+        browser.runtime.sendMessage(message);
+    };
 
-    function TestHTML() {
-        let MType = document.querySelector('meta[property="og:type"]').content === 'musescore:score';
-        let MSite = document.querySelector('meta[property="og:site_name"]').content === 'Musescore.com';
-        let MTitle = document.querySelector('meta[property="og:title"]').content !== undefined;
-        let MUrl = document.querySelector('meta[property="og:url"]').content !== undefined;
-        let MDescription = document.querySelector('meta[property="og:description"]').content !== undefined;
-        let MImage = document.querySelector('meta[property="og:image"]').content !== undefined;
+    const callBack = (type, trigger) => {
+        let message = {
+            MDBack: {
+                scanType: 'legacy',
+                type: type,
+                name: getScoreName(),
+                scoreUrl: getScoreUrl(),
+                trigger: trigger
+            }
+        };
 
-        let IsAllValid = MType && MSite && MTitle && MUrl && MDescription && MImage;
+        browser.runtime.sendMessage(message);
+    };
 
-        setTimeout(() => CallMain('HTMLTest', IsAllValid), 50);
-    }
-
-    function ScanMidi(Trigger) {
-        let FullScreenBtn = document.querySelector('button[title="Toggle Fullscreen"]');
-        let WasPianoOpened = window.location.href.endsWith('/piano-tutorial');
+    const scanMidi = Trigger => {
+        let fullScreenBtn = document.querySelector('button[title="Toggle Fullscreen"]');
+        let wasPianoOpened = window.location.href.endsWith('/piano-tutorial');
         let btn;
 
-        if (FullScreenBtn) {
+        if (fullScreenBtn) {
             try {
-                btn = FullScreenBtn.parentElement.parentElement.firstChild.firstChild;
+                btn = fullScreenBtn.parentElement.parentElement.firstChild.firstChild;
                 btn.click();
 
-                if (WasPianoOpened)
+                if (wasPianoOpened)
                     btn.click();
 
                 let i = 0;
 
-                let Interval = setInterval(() => {
+                let interval = setInterval(() => {
                     if (window.location.href.endsWith('/piano-tutorial')) {
                         btn.click();
-                        clearInterval(Interval);
+                        clearInterval(interval);
 
-                        return CallBack('midi', Trigger);
+                        return callBack('midi', Trigger);
                     } else if (i > 50) {
-                        clearInterval(Interval);
+                        clearInterval(interval);
 
-                        return CallMain('Error', 'Downloading time out.');
+                        return callMain('error', 'Downloading time out.');
                     }
                     i++
                 }, 500);
             } catch (e) {
-                return CallMain('Error', 'Can not find the play button.');
+                return callMain('error', 'Can not find the play button.');
             }
         }
-    }
+    };
 
-    browser.runtime.onMessage.addListener(ListenerHandler);
+    browser.runtime.onMessage.addListener(listenerHandler);
 }();

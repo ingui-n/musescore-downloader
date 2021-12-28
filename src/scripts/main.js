@@ -1,84 +1,82 @@
 !async function () {
     'use strict';
 
-    /** Gets current tab, process until Tab status is complete */
-    async function GetTab() {
+    const getTab = async () => {
         const query = {active: true, currentWindow: true};
 
-        let Tab = await browser.tabs.query(query);
+        let tab = await browser.tabs.query(query);
 
-        while (Tab[0].status !== 'complete') {
-            Tab = await browser.tabs.query(query);
+        while (tab[0].status !== 'complete') {
+            tab = await browser.tabs.query(query);
         }
 
-        return Tab[0];
-    }
+        return tab[0];
+    };
 
-    /** Check URL if is URL valid */
-    function TestUrl(Tab) {
-        return /^https?:\/\/musescore\.com\/(user\/\d+\/scores\/\w+|\w+\/[\w-]+|\S+)$/.exec(Tab.url) !== null;
-    }
-
-    async function TestHTML() {
-        await CallContent('HTMLTest', null, false);
-
-        function timeout() {
-            if (IsHTMLContentValid === undefined) {
-                setTimeout(timeout, 500);
-            } else {
-                startPopup();
-            }
-        }
-
-        timeout();
-    }
-
-    /** Resets background color animation */
-    function ResetBackgroundColorAnimation() {
+    const resetBackgroundColorAnimation = () => {
         const html = document.querySelector('html');
 
         html.style.setProperty('--color-animation', 'null');
         setTimeout(() => {
             html.style.setProperty('--color-animation', 'background-migration 3s ease alternate infinite');
         }, 10);
-    }
+    };
 
-    /** Prints website message */
-    function PrintToPopup(PrintSolver, Message, MessageLen) {
+    const printToPopup = (printSolver, message) => {
         const html = document.querySelector('html');
         const body = document.querySelector('.content');
         const dContent = document.querySelector('.fun__content');
-        const pMessage = document.querySelector('.message');
+        const pMessage = document.querySelector('.message__text');
 
         pMessage.classList.forEach(value => {
-            if (value !== 'message')
+            if (value !== 'message__text')
                 pMessage.classList.remove(value);
         });
 
-        if (PrintSolver) {
+        if (printSolver) {
             html.style.setProperty('--html-height', '165px');
-            body.appendChild(SolverContent);
+            body.appendChild(solverContent);
 
             pMessage.textContent = '';
         } else {
             if (dContent)
                 body.removeChild(dContent);
 
-            pMessage.classList.add(`message-${MessageLen}-line`);
-            pMessage.textContent = Message;
+            pMessage.classList.add(`message-block`);
+            pMessage.textContent = message;
         }
-        ResetBackgroundColorAnimation();
-    }
+        resetBackgroundColorAnimation();
+    };
 
-    /** Returns content div */
-    function GetContentDiv() {
+    const printRefreshButton = () => {
+        const div = document.createElement('div');
+
+        div.className = 'fun__content';
+
+        const btn = document.createElement('button');
+
+        btn.className = 'btn__fun btn__refresh';
+        btn.textContent = 'Refresh';
+
+        btn.addEventListener('click', () => {
+            browser.tabs.reload();
+            location.reload();
+        });
+
+        document.querySelector('.message__text').classList.add('no-margin');
+
+        div.appendChild(btn);
+        document.querySelector('.message__div').appendChild(div);
+    };
+
+    const getContentDiv = () => {
         return document.querySelector('.fun__content').cloneNode(true);
-    }
+    };
 
-    function SetPseudoLoading(message) {
-        PrintToPopup(false, message, 1);
+    const setPseudoLoading = message => {
+        printToPopup(false, message);
 
-        const pre = document.querySelector('.message-loading');
+        const pre = document.querySelector('.message__loading');
 
         let direction = false;
         let i = 0;
@@ -99,110 +97,104 @@
 
             direction ? i++ : i--;
         }, 85);
-    }
+    };
 
-    function StopPseudoLoading() {
+    const stopPseudoLoading = () => {
         clearInterval(loadingInterval);
-        document.querySelector('.message-loading').textContent = '';
-    }
+        document.querySelector('.message__loading').textContent = '';
+    };
 
-    /** Calls main-background script */
-    async function CallContent(Type, TriggerType = null, setLoading = true) {
-        let Message = {
-            MDMain: {
-                Type: Type,
-                Trigger: TriggerType
+    const isSheetOnPage = async () => {
+        return (await fetch(`${tab.url}/embed`)).ok;
+    };
+
+    const callContent = async () => {
+        if (await isSheetOnPage()) {
+            try {
+                await browser.tabs.sendMessage(tab.id, '');
+
+                return true;
+            } catch (e) {
+                stopPseudoLoading();
+
+                printToPopup(false, `Please refresh the page.`);
+                printRefreshButton();
             }
-        };
+        } else {
+            stopPseudoLoading();
 
-        if (setLoading)
-            SetPseudoLoading('Please wait');
-
-        try {
-            await browser.tabs.sendMessage(Tab.id, '');
-        } catch (e) {
-            StopPseudoLoading();
-            return PrintToPopup(false, `Please refresh the page.`, 1);
+            printToPopup(false, `Please open a Musescore sheet.`);
         }
 
-        try {
-            await browser.tabs.sendMessage(Tab.id, Message);
-            browser.runtime.onMessage.addListener(ResolveContentListener);
-        } catch (e) {
-            StopPseudoLoading();
-            PrintToPopup(false, `Please open a music sheet.`, 1);
-        }
-    }
+        return false;
+    };
 
-    /** Catches Errors */
-    function ResolveContentListener(message) {
-        if (message === 'MDFinished') {
-            StopPseudoLoading();
-            PrintToPopup(true);
-            return;
-        }
-
-        if (typeof message === 'object' && message.MDContent) {
-            if (message.MDContent.Type === 'Error') {
-                StopPseudoLoading();
-                PrintToPopup(false, message.MDContent.Message, 1);
-            } else if (message.MDContent.Type === 'HTMLTest') {
-                IsHTMLContentValid = message.MDContent.isHTMLValid ?? false;
+    const callBack = (type, triggerType) => {
+        let message = {
+            MDBack: {
+                type: type,
+                trigger: triggerType,
+                scanType: 'alpha',
+                url: tab
             }
         }
+
+        setPseudoLoading('Please wait');
+
+        browser.runtime.sendMessage(message);
+    };
+
+    const startPopup = () => {
+        stopPseudoLoading();
+        printToPopup(true);
+
+        const sheetOpenB = document.querySelector('.sheet__open');
+        const sheetDownloadB = document.querySelector('.sheet__download');
+        const audioDownloadB = document.querySelector('.audio__download');
+        const midiDownloadB = document.querySelector('.midi__download');
+
+        sheetOpenB.addEventListener('click', () => {
+            callBack('sheet', 'open');
+        });
+
+        sheetDownloadB.addEventListener('click', () => {
+            callBack('sheet', 'download');
+        });
+
+        audioDownloadB.addEventListener('click', () => {
+            callBack('audio', 'download');
+        });
+
+        midiDownloadB.addEventListener('click', () => {
+            callBack('midi', 'download');
+        });
     }
 
-    let loadingInterval,
-        IsHTMLContentValid,
-        StartedPopupAlready = false;
-
-    const SolverContent = GetContentDiv();
-
-    SetPseudoLoading('Initializing');
-
-    const Tab = await GetTab();
-    const IsUrlValid = TestUrl(Tab);
-
-    if (IsUrlValid) {
-        await TestHTML();
-    } else {
-        StopPseudoLoading();
-        return PrintToPopup(false, 'Please open a Musescore sheet.', 2);
-    }
-
-    function startPopup() {
-        if (!StartedPopupAlready)
-            StartedPopupAlready = true;
-        else
-            return;
-
-        StopPseudoLoading();
-
-        if (!IsUrlValid || !IsHTMLContentValid) {
-            return PrintToPopup(false, 'Please open a Musescore sheet.', 2);
+    const resolveListeners = message => {
+        if (typeof message === 'object' && message.MDMain) {
+            if (message.MDMain.type === 'error') {
+                stopPseudoLoading();
+                printToPopup(false, message.MDMain.message);
+            } else if (message.MDMain.type === 'success') {
+                stopPseudoLoading();
+                printToPopup(true);
+            }
         }
+    };
 
-        PrintToPopup(true);
+    let loadingInterval;
+    const solverContent = getContentDiv();
 
-        const SheetOpenB = document.querySelector('.sheet__open');
-        const SheetDownloadB = document.querySelector('.sheet__download');
-        const AudioDownloadB = document.querySelector('.audio__download');
-        const MidiDownloadB = document.querySelector('.midi__download');
+    setPseudoLoading('Initializing');
 
-        SheetOpenB.addEventListener('click', () => {
-            CallContent('Sheet', 'Open');
-        });
+    const tab = await getTab();
 
-        SheetDownloadB.addEventListener('click', () => {
-            CallContent('Sheet', 'Download');
-        });
-
-        AudioDownloadB.addEventListener('click', () => {
-            CallContent('Audio', 'Download');
-        });
-
-        MidiDownloadB.addEventListener('click', () => {
-            CallContent('Midi', 'Download');
-        });
+    if (tab.url === undefined) {
+        stopPseudoLoading();
+        printToPopup(false, `Please open a Musescore sheet.`);
+    } else if (await callContent()) {
+        startPopup();
     }
+
+    browser.runtime.onMessage.addListener(resolveListeners);
 }();
