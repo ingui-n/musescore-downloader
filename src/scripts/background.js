@@ -1,227 +1,536 @@
 !function () {
     'use strict';
 
-    /** Resolves listener from content.js */
-    async function ResolveListener(Message) {
-        if (typeof Message === 'object' && Message.MDBack) {
-            let Mess = Message.MDBack;
+    const resolveListener = async message => {
+        if (typeof message === 'object' && message.MDBack) {
+            let mess = message.MDBack;
 
-            if (Mess.ScoreUrl) {
-                let SheetUrl = ExtractSheetURL(Mess.ScoreUrl);
+            if (mess.scanType && mess.scanType === 'alpha') {
+                await processAlpha(mess.type, mess.trigger, mess.url);
+            } else if (mess.scanType && mess.scanType === 'legacy') {
+                let sheetUrl = extractSheetURL(mess.scoreUrl);
 
-                switch (Mess.Type) {
+                switch (mess.type) {
                     case 'audio':
-                        return HandleAudio(Mess.Name, SheetUrl, Mess.Trigger);
+                        return processAudioLegacy(mess.name, sheetUrl, mess.trigger);
                     case 'midi':
-                        return HandleMidi(Mess.Name, SheetUrl, Mess.Trigger);
+                        return processMidiLegacy(mess.name, sheetUrl, mess.trigger);
                     case 'sheet':
-                        return MakePDF(Mess.Name, SheetUrl, Mess.Trigger);
+                        return processSheetLegacy(mess.name, sheetUrl, mess.trigger);
                 }
             }
         }
-    }
+    };
 
-    /** Downloads extracted media */
-    function DownloadMedia(Name, Url, Ext) {
+    const extractSheetURL = url => {
+        let match = /^https?:\/\/musescore\.com((\/[\w_-]+){1,5})/.exec(url);
+
+        return match !== null ? match[1] : undefined;
+    };
+
+    const downloadMedia = (name, url, ext) => {
         const a = document.createElement('a');
-        a.download = `${Name}.${Ext}`;
-        a.href = Url;
+
+        a.download = `${name}.${ext}`;
+        a.href = url;
+
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
+    };
 
-        browser.runtime.sendMessage('MDFinished');
-    }
-
-    /** Handle audio extension */
-    function HandleAudio(Name, SheetUrl, Trigger) {
-        let Url = Log[SheetUrl].audio;
-
-        const Ext = Url.match(/^https:\/\/s3\.ultimate-guitar\.com\/musescore\.scoredata\/g\/\w+\/score\.(\w+)\?/);
-
-        if (Trigger === 'Download')
-            DownloadMedia(Name, Url, Ext ? Ext[1] : 'mp3');
-    }
-
-    /** Makes PDF */
-    async function MakePDF(SheetName, SheetUrl, TriggerType) {
-        /** Resolve fetched images */
-        async function GetPage(url, res, i) {
-            const match = /\/score_\d+.(\w+)/.exec(url);
-            const FileType = match[1];
-
-            let DataType;
-
-            if (FileType.toUpperCase() === 'PNG') {
-                DataType = await res.arrayBuffer();
-            } else if (FileType.toUpperCase() === 'SVG') {
-                DataType = await res.text();
+    const getMediaUrl = async (intel, index, type, token) => {
+        let url = `https://musescore.com/api/jmuse?id=${intel.idShort}&index=${index}&type=${type}&v2=1`;
+        let headers = {
+            referrer: intel.url,
+            headers: {
+                'authorization': token
             }
+        };
 
-            FetchedPages.push({[i]: [FileType, DataType]});
+        try {
+            let res = await fetch(url, headers);
+            let json = await res.json();
 
-            if (FetchedPages.length === Pages.length)
-                CreatePDF();
+            return json.info.url;
+        } catch (e) {
+        }
+    };
+
+    const isMediaUrlValid = async url => {
+        try {
+            return (await fetch(url)).ok;
+        } catch (e) {
+            return false;
+        }
+    };
+
+    const getMedia = async (intel, type) => {
+        let index = type === 'img' ? 0 : 1;
+        let output = {};
+        let theToken;
+
+        for (let i = 0; i < scoresLog.tokens.length; i++) {
+            let mediaUrl = await getMediaUrl(intel, index, type, scoresLog.tokens[i]);
+
+            if (mediaUrl === undefined)
+                continue;
+
+            if (type !== 'img')
+                return {0: mediaUrl};
+
+            theToken = scoresLog.tokens[i];
+            break;
         }
 
-        /** Creates the PDF */
-        function CreatePDF() {
+        while (true) {
+            let mediaUrl = await getMediaUrl(intel, index, type, theToken);
+            let isValid = await isMediaUrlValid(mediaUrl);
+
+            if (isValid) {
+                output[index] = mediaUrl;
+                index++;
+            } else {
+                return output;
+            }
+        }
+    };
+
+    const setAllTokens = async runtimeUrl => {
+        let allTokens = [];
+
+        let runtime = await fetch(runtimeUrl);
+
+        if (runtime.ok) {
+            let text = await runtime.text();
+
+            let match = text.matchAll(/(\d+):["'](\w+)["']/g);
+            let matchYearCode = text.match(/=>["'](\d+\/)["']/)[1];
+
+            for (const mat of match) {
+                let link = `https://musescore.com/static/public/build/musescore_es6/${matchYearCode}${mat[1]}.${mat[2]}.js`;
+
+                let script = await fetch(link);
+
+                if (script.ok) {
+                    let text = await script.text();
+
+                    let matches = text.matchAll(/["']([a-z0-9]{40})["']\)\.then/g);
+
+                    for (const match of matches)
+                        allTokens.push(match[1]);
+                }
+
+                allTokens = [...new Set(allTokens)];
+
+                if (allTokens.length === 3)
+                    break;
+            }
+        }
+
+        scoresLog.tokens = allTokens;
+    };
+
+    const callMain = (type, message = undefined) => {
+        const mess = {
+            MDMain: {
+                type: type,
+                message: message
+            }
+        };
+
+        browser.runtime.sendMessage(mess);
+    };
+
+    const callContent = (tabbId, type, trigger) => {
+        const mess = {
+            MDContent: {
+                type: type,
+                trigger: trigger
+            }
+        };
+
+        browser.tabs.sendMessage(tabbId, mess);
+    };
+
+    const getIntelFromUrl = async url => {
+        const trimSheetName = name => {
+            name = name.toLowerCase();
+            const find = ['<', '>', '"', "'", '“', '”', '?', ':', '/', '\\', '|', '*', ','];
+
+            for (let i = 0; i < find.length; i++) {
+                name = name.replace(find[i], '');
+            }
+
+            name = name.replaceAll(' ', '_');
+            name = name.replaceAll('+', '_');
+
+            return name.trim() === '' ? 'no_name' : name.trim();
+        };
+
+        let match = /^https?:\/\/musescore\.com((?:\/[\w_-]+){1,5})/.exec(url);
+
+        if (match !== null) {
+            let page = await fetch(url);
+
+            if (page.ok) {
+                let text = await page.text();
+
+                let matchIdShort = /https?:\/\/musescore\.com\/user\/\d+\/scores\/(\d+)/.exec(text);
+
+                if (matchIdShort !== null) {
+                    let matchIdLong = /content="https:\/\/musescore\.com\/static\/musescore\/scoredata\/g\/(\w+)\/score_0\.\w{3}@/.exec(text);
+                    let matchRuntime = /(https:\/\/musescore\.com\/static\/public\/build\/musescore_es6\/ms~runtime.\w+\.js)/.exec(text);
+                    let matchName1 = /<meta[a-zA-Z="' -]*(?:property=["']og:title["'][a-zA-Z="' -]*content=["']([\S\s]+)["']|content=["']([\S\s]+)["'][a-zA-Z="' -]*property=["']og:title["'])[a-zA-Z="'\/ :-]*>/.exec(text);
+                    let matchName2 = /&quot;title&quot;:&quot;(\S+)&quot;,&quot;isShowSecretUrl&quot/.exec(text);
+
+                    let sheetName;
+
+                    if (matchIdLong !== null && matchRuntime !== null) {
+                        if (matchName2 !== null) {
+                            sheetName = trimSheetName(matchName2[1]);
+                        } else if (matchName1 !== null) {
+                            sheetName = matchName1[1] ? trimSheetName(matchName1[1]) : trimSheetName(matchName1[2]);
+                        }
+
+                        return {
+                            name: sheetName,
+                            idShort: matchIdShort[1],
+                            idLong: matchIdLong[1],
+                            runtimeUrl: matchRuntime[1]
+                        };
+                    }
+                }
+            }
+        }
+    };
+
+    const processAlpha = async (type, trigger, tab, lastChange = false) => {
+        let intel = await getIntelFromUrl(tab.url);
+
+        if (intel !== undefined) {
+            if (scoresLog.tokens === undefined) {
+                await setAllTokens(intel.runtimeUrl);
+            }
+
+            let mediaUrl, ext;
+
+            if (type === 'audio') {
+                mediaUrl = await getMedia(intel, 'mp3');
+                ext = 'mp3';
+            } else if (type === 'sheet') {
+                mediaUrl = await getMedia(intel, 'img');
+                ext = 'pdf';
+            } else if (type === 'midi') {
+                mediaUrl = await getMedia(intel, 'midi');
+                ext = 'mid';
+            } else {
+                return callContent(tab.id, type, trigger);
+            }
+
+            if (mediaUrl === {}) {
+                if (!lastChange) {
+                    await setAllTokens(intel.runtimeUrl);
+
+                    return processAlpha(type, trigger, tab.url, true);
+                } else {
+                    return callContent(tab.id, type, trigger);
+                }
+            }
+
+            if (type !== 'sheet' && trigger === 'download') {
+                downloadMedia(intel.name, mediaUrl[0], ext);
+            } else if (type === 'sheet') {
+                let pdf = await createPDF(mediaUrl, intel.name);
+
+                if (!pdf)
+                    return callContent(tab.id, type, trigger);
+
+                let triggered = pdf.on('finish', async () => {
+                    let url = pdf.toBlobURL('application/pdf');
+
+                    if (trigger === 'download') {
+                        downloadMedia(intel.name, url, 'pdf');
+
+                        return true;
+                    } else if (trigger === 'open') {
+                        await browser.tabs.create({url: url});
+
+                        return true;
+                    }
+                });
+
+                if (!triggered)
+                    return callContent(tab.id, type, trigger);
+            }
+        } else {
+            return callContent(tab.id, type, trigger);
+        }
+
+        callMain('success');
+    };
+
+    const fetchPages = async urls => {
+        let fetchedPages = {}, type;
+
+        for (const url in urls) {
+            try {
+                let res = await fetch(urls[url]);
+
+                if (res.ok) {
+                    let page = await res.blob();
+
+                    if (!type)
+                        type = page.type;
+
+                    if (type === 'image/png') {
+                        fetchedPages[url] = await page.arrayBuffer();
+                    } else if (type === 'image/svg+xml') {
+                        fetchedPages[url] = await page.text();
+                    } else {
+                        return;
+                    }
+                }
+            } catch (e) {
+                return;
+            }
+        }
+
+        return [fetchedPages, type];
+    };
+
+    const objectToArray = object => {
+        let array = [];
+
+        for (const obj in object)
+            array.push(object[obj]);
+
+        return array;
+    };
+
+    const createPDF = async (urls, name) => {
+        let fetchedPages = await fetchPages(urls);
+
+        if (fetchedPages === undefined)
+            return;
+
+        return generatePDF(objectToArray(fetchedPages[0]), fetchedPages[1], name);
+    };
+
+    const generatePDF = (blobs, type, name) => {
+        const a4Size = [595, 842];
+
+        const doc = new PDFDocument({
+            size: a4Size
+        });
+
+        doc.info.Title = name;
+
+        const stream = doc.pipe(blobStream());
+
+        for (let i = 0; i < blobs.length; i++) {
+            if (type === 'image/png') {
+                doc.image(blobs[i], 0, 0, {fit: a4Size});
+            } else if (type === 'image/svg+xml') {
+                SVGtoPDF(doc, blobs[i], 0, 0, {preserveAspectRatio: '16:9'});
+            }
+
+            if (i + 1 === blobs.length) {
+                doc.end();
+
+                return stream;
+            } else {
+                doc.addPage();
+            }
+        }
+    };
+
+    /** Legacy part */
+
+    const processAudioLegacy = (name, sheetUrl, trigger) => {
+        let url = scoresLog[sheetUrl].audio;
+
+        const ext = url.match(/^https:\/\/s3\.ultimate-guitar\.com\/musescore\.scoredata\/g\/\w+\/score\.(\w+)\?/);
+
+        if (trigger === 'download') {
+            downloadMedia(name, url, ext ? ext[1] : 'mp3');
+            callMain('success');
+        }
+    };
+
+    const processMidiLegacy = (name, sheetUrl, trigger) => {
+        let url = scoresLog[sheetUrl].midi;
+
+        const ext = url.match(/^https:\/\/s3\.ultimate-guitar\.com\/musescore\.scoredata\/g\/\w+\/score\.(\w+)\?/);
+
+        if (trigger === 'download') {
+            downloadMedia(name, url, ext ? ext[1] : 'mid');
+            callMain('success');
+        }
+    };
+
+    const processSheetLegacy = async (sheetName, sheetUrl, triggerType) => {
+        const getFirstSite = site => {
+            let fSite = site.match(/^(https?:\/\/s3\.ultimate-guitar\.com\/musescore\.scoredata\/g\/\w+\/score_)\d+(\.(png|svg))/);
+
+            return fSite !== null ? `${fSite[1]}0${fSite[2]}` : undefined;
+        };
+
+        const getPage = async (res, i) => {
+            let dataType;
+
+            if (res.type === 'image/png') {
+                dataType = await res.arrayBuffer();
+            } else if (res.type === 'image/svg+xml') {
+                dataType = await res.text();
+            }
+
+            fetchedPages.push({[i]: [res.type, dataType]});
+
+            if (fetchedPages.length === pages.length)
+                await createPDF();
+        };
+
+        const createPDF = async () => {
+            const a4Size = [595, 842];
+
             const doc = new PDFDocument({
-                size: [595, 842]
+                size: a4Size
             });
 
             const stream = doc.pipe(blobStream());
 
-            for (let i = 0; i < FetchedPages.length; i++) {
-                for (let a = 0; a < FetchedPages.length; a++) {
-                    if (FetchedPages[a][i]) {
+            doc.info.Title = sheetName;
 
-                        if (FetchedPages[a][i][0].toUpperCase() === 'PNG') {
-                            doc.image(FetchedPages[a][i][1], 0, 0, {fit: [595, 842]});
-                        } else if (FetchedPages[a][i][0].toUpperCase() === 'SVG') {
-                            SVGtoPDF(doc, FetchedPages[a][i][1], 0, 0, {preserveAspectRatio: "16:9"});
+            for (let i = 0; i < fetchedPages.length; i++) {
+                for (let a = 0; a < fetchedPages.length; a++) {
+                    if (fetchedPages[a][i]) {
+
+                        if (fetchedPages[a][i][0] === 'image/png') {
+                            console.log('a');
+                            doc.image(fetchedPages[a][i][1], 0, 0, {fit: a4Size});
+                        } else if (fetchedPages[a][i][0] === 'image/svg+xml') {
+                            console.log('b');
+                            SVGtoPDF(doc, fetchedPages[a][i][1], 0, 0, {preserveAspectRatio: "16:9"});
                         }
 
-                        if (i === FetchedPages.length - 1) {
-                            doc.info['Title'] = SheetName;
-
+                        if (i === fetchedPages.length - 1) {
                             doc.end();
-                            if (TriggerType === 'Download') {
-                                stream.on("finish", () => {
-                                    const Url = stream.toBlobURL("application/pdf");
 
-                                    DownloadMedia(SheetName, Url, 'pdf');
-                                });
-                            } else if (TriggerType === 'Open') {
-                                stream.on("finish", () => {
-                                    browser.tabs.create({url: stream.toBlobURL("application/pdf")});
-                                });
-                            }
+                            stream.on('finish', async () => {
+                                const url = stream.toBlobURL('application/pdf');
+
+                                if (triggerType === 'download') {
+                                    downloadMedia(sheetName, url, 'pdf');
+                                } else if (triggerType === 'open') {
+                                    await browser.tabs.create({url: url});
+                                }
+
+                                callMain('success');
+                            });
                         } else {
                             doc.addPage();
                         }
                     }
                 }
             }
+        };
+
+        let pages = scoresLog[sheetUrl].sheet;
+        let fetchedPages = [];
+
+        if (pages.length === 0) return;
+
+        let firstSite = getFirstSite(pages[0]);
+
+        if (firstSite) {
+            if (!pages.find(el => el === firstSite))
+                pages.push(firstSite);
         }
 
-        let Pages = Log[SheetUrl].sheet;
-        let FetchedPages = [];
+        pages.sort();
 
-        if (Pages.length === 0) return;
+        for (let i = 0; i < pages.length; i++) {
+            let res = await fetch(pages[i]);
 
-        let FirstSite = GetFirstSite(Pages[0]);
-
-        if (FirstSite) {
-            if (!Pages.find(el => el === FirstSite))
-                Pages.push(FirstSite);
+            if (res.ok)
+                await getPage(await res.blob(), i);
         }
+    };
 
-        Pages.sort();
+    /** Legacy logging part */
 
-        for (let i = 0; i < Pages.length; i++) {
-            fetch(Pages[i])
-                .then(res => {
-                    return res.ok ? res.blob() : undefined;
-                })
-                .then(res => GetPage(Pages[i], res, i))
-                .catch(e => console.error(e));
-        }
-    }
+    const logScores = async details => {
+        const setURLToLog = details => {
+            if (details.type !== 'main_frame')
+                return false;
 
-    function HandleMidi(Name, SheetUrl, Trigger) {
-        let Url = Log[SheetUrl].midi;
+            let sheetURL = extractSheetURL(details.url);
 
-        const Ext = Url.match(/^https:\/\/s3\.ultimate-guitar\.com\/musescore\.scoredata\/g\/\w+\/score\.(\w+)\?/);
+            if (sheetURL && !scoresLog[sheetURL]) {
+                scoresLog[sheetURL] = {
+                    audio: '',
+                    midi: '',
+                    sheet: []
+                };
 
-        if (Trigger === 'Download')
-            DownloadMedia(Name, Url, Ext ? Ext[1] : 'mid');
-    }
+                return sheetURL;
+            }
 
-    function ExtractSheetURL(Url) {
-        let Match = /^https?:\/\/musescore\.com((\/[\w_-]+){1,7})/.exec(Url);
-
-        return Match !== null ? Match[1] : undefined;
-    }
-
-    function SetURLToLog(details) {
-        if (details.type !== 'main_frame')
             return false;
+        };
 
-        let SheetURL = ExtractSheetURL(details.url);
+        const setScoreElements = url => {
+            let scoreId = url.match(/^https?:\/\/s3\.ultimate-guitar\.com\/musescore\.scoredata\/g\/(\w+)\/score(?:(?<sheet>_\d+)|(?<midi>\.midi?)|(?<audio>\.mp3|\.wav|\.ogg|\.flac))/);
 
-        if (SheetURL) {
-            Log[SheetURL] = {
-                audio: '',
-                midi: '',
-                sheet: []
-            };
+            if (scoreId !== null) {
+                for (const score of Object.values(scoresLog)) {
+                    if (score.id === scoreId[1]) {
+                        let groups = scoreId.groups;
 
-            return SheetURL;
-        } else {
-            return false;
-        }
-    }
+                        let type = groups.audio ? 'audio' : groups.midi ? 'midi' : groups.sheet ? 'sheet' : undefined;
 
-    async function SetScoreId(Url, ScorePath) {
-        await fetch(Url)
-            .then(async res => {
-                if (res.ok) {
-                    let text = await res.text();
+                        switch (type) {
+                            case 'audio':
+                                return score.audio = url;
+                            case 'midi':
+                                return score.midi = url;
+                            case 'sheet':
+                                let reducedSites = score.sheet.filter(el => !el.startsWith(url));
+                                reducedSites.push(url);
 
-                    let MatchScoreId = /content="https:\/\/musescore\.com\/static\/musescore\/scoredata\/g\/(\w+)\/score_0\.\w{3}@/.exec(text);
-
-                    if (MatchScoreId !== null) {
-                        Log[ScorePath].id = MatchScoreId[1];
-                    }
-                }
-            });
-    }
-
-    function SetScoreElements(Url) {
-        let ScoreId = Url.match(/^https?:\/\/s3\.ultimate-guitar\.com\/musescore\.scoredata\/g\/(\w+)\/score(?:(?<sheet>_\d+)|(?<midi>\.midi?)|(?<audio>\.mp3|\.wav|\.ogg|\.flac))/);
-
-        if (ScoreId !== null) {
-            for (const Score of Object.values(Log)) {
-                if (Score.id === ScoreId[1]) {
-                    let Groups = ScoreId.groups;
-
-                    let Type = Groups.audio ? 'audio' : Groups.midi ? 'midi' : Groups.sheet ? 'sheet' : undefined;
-
-                    switch (Type) {
-                        case 'audio':
-                            return Score.audio = Url;
-                        case 'midi':
-                            return Score.midi = Url;
-                        case 'sheet':
-                            let ReducedSites = Score.sheet.filter(el => el.substr(0, 170) !== Url.substr(0, 170));
-                            ReducedSites.push(Url);
-
-                            return Score.sheet = ReducedSites;
+                                return score.sheet = reducedSites;
+                        }
                     }
                 }
             }
+        };
+
+        const setScoreId = async (url, scorePath) => {
+            let res = await fetch(url);
+
+            if (res.ok) {
+                let text = await res.text();
+
+                let matchScoreId = /https:\/\/musescore\.com\/static\/musescore\/scoredata\/g\/(\w+)\/score_0\.\w{3}@/.exec(text);
+
+                if (matchScoreId !== null)
+                    scoresLog[scorePath].id = matchScoreId[1];
+            }
+        };
+
+
+        let isItScoreUrl = setURLToLog(details);
+
+        if (!isItScoreUrl) {
+            setScoreElements(details.url);
+        } else if (typeof isItScoreUrl === 'string') {
+            await setScoreId(details.url, isItScoreUrl);
         }
-    }
+    };
 
-    function GetFirstSite(Site) {
-        let FSite = Site.match(/^(https?:\/\/s3\.ultimate-guitar\.com\/musescore\.scoredata\/g\/\w+\/score_)\d+(\.(png|svg))/);
+    let scoresLog = {};
 
-        return FSite !== null ? `${FSite[1]}0${FSite[2]}` : undefined;
-    }
-
-    async function LogScores(details) {
-        let IsItScoreUrl = SetURLToLog(details);
-
-        if (IsItScoreUrl === false) {
-            SetScoreElements(details.url);
-        } else if (typeof IsItScoreUrl === 'string') {
-            await SetScoreId(details.url, IsItScoreUrl);
-        }
-    }
-
-    let Log = {};
-
-    browser.runtime.onMessage.addListener(ResolveListener);
-    browser.webRequest.onBeforeRequest.addListener(LogScores, {urls: ['https://s3.ultimate-guitar.com/musescore.scoredata/g/*/score*', 'https://musescore.com/*']});
+    browser.runtime.onMessage.addListener(resolveListener);
+    browser.webRequest.onBeforeRequest.addListener(logScores, {urls: ['https://s3.ultimate-guitar.com/musescore.scoredata/g/*/score*', 'https://musescore.com/*/*']});
 }();
