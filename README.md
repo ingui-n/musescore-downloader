@@ -15,14 +15,14 @@ Chrome removed it from their web store because of MuseScore take down request.
 ## Installation
 ### Automatic Installation:
 1. Download the extension from [Crx4Chrome](https://f6.crx4chrome.com/crx.php?i=nnekmplngdkmmgaoinpoahbikhfiedgj&v=0.4.1)
-2. Click on "Go to Extensions" and then click to "Install" the extensions
+2. Click on "Go to Extensions" and then click to "Install" the extension
 3. Congrats 🎉 you just installed the extension
 
 ### Manual installation:
 1. Go to [The Latest release](https://github.com/ingui-n/musescore-downloader/releases/latest)
 2. Download file "musescore-downloader.crx"
 3. Open the file with your web browser
-4. Click on "Go to Extensions" and then click to "Install" the extensions
+4. Click on "Go to Extensions" and then click to "Install" the extension
 5. Congrats 🎉 you just installed the extension
 
 ### Usage:
