@@ -5,6 +5,8 @@ This browser extension allows you to download:
 * music sheets - pdf
 * midi - mid
 
+⚠️ Doesn't work on official scores.
+
 Musescore downloader was removed from the Chrome Web Store because of MuseScore take down request.
 
 <img src="https://raw.githubusercontent.com/ingui-n/musescore-downloader/master/screenshots/extension.png" alt="Beautiful image of the extension"/>
@@ -12,7 +14,7 @@ Musescore downloader was removed from the Chrome Web Store because of MuseScore 
 ## Installation
 ### Manual installation:
 1. Go to [the latest release](https://github.com/ingui-n/musescore-downloader/releases/latest)
-2. Download the "Source code (zip)" file
+2. Download the "musescore-downloader-packed.zip" file
 3. Extract the ZIP file
 
 <details>
@@ -32,11 +34,12 @@ Musescore downloader was removed from the Chrome Web Store because of MuseScore 
 6. That's it! Extension is now ready to use 🎉
 </details>
 
+<!--
 ### Automatic Installation:
 ⚠️ Successfully tested only on Opera 94.0.4606.38, it may not work on every browser ⚠️
 1. Download the extension from [Crx4Chrome](https://f6.crx4chrome.com/crx.php?i=nnekmplngdkmmgaoinpoahbikhfiedgj&v=0.4.1)
 2. Click on "Go to Extensions" and then click to "Install" the extension
-
+-->
 
 
 ## Usage:
@@ -53,6 +56,6 @@ Musescore downloader was removed from the Chrome Web Store because of MuseScore 
 * Vivaldi
 * (basically all Chromium browsers)
 
-Please use this extension only for studying purposes.
+Please use this extension for study purposes only.
 
 <img src="https://raw.githubusercontent.com/ingui-n/musescore-downloader/master/screenshots/screenshot.png" alt="Beautiful image with extension on MuseScore website"/>
