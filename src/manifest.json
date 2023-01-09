@@ -1,0 +1,36 @@
+{
+  "manifest_version": 3,
+  "name": "Music Score Downloader",
+  "description": "This extension allows you to download sheets, audio and midi files",
+  "version": "0.5.0",
+  "icons": {
+    "16": "icon-16.png",
+    "32": "icon-32.png",
+    "48": "icon-48.png",
+    "128": "icon-128.png"
+  },
+  "permissions": [
+    "webRequest",
+    "storage"
+  ],
+  "host_permissions": [
+    "https://musescore.com/*",
+    "https://s3.ultimate-guitar.com/musescore.scoredata/g/*"
+  ],
+  "action": {
+    "default_popup": "popup.html"
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://musescore.com/*"
+      ],
+      "js": [
+        "content.js"
+      ]
+    }
+  ]
+}

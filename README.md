@@ -1,15 +1,13 @@
 # MuseScore Downloader
 
 This browser extension allows you to download:
-* audio - mp3/wav/ogg*
+* audio - mp3
 * music sheets - pdf
-* midi - mid/midi*
-
-*Depends on music sheet
+* midi - mid
 
 Musescore downloader was removed from the Chrome Web Store because of MuseScore take down request.
 
-<img src="https://raw.githubusercontent.com/ingui-n/musescore-downloader/master/screenshots/extension1.png" alt="Beautiful image of the extension"/>
+<img src="https://raw.githubusercontent.com/ingui-n/musescore-downloader/master/screenshots/extension.png" alt="Beautiful image of the extension"/>
 
 ## Installation
 ### Manual installation:
@@ -57,4 +55,4 @@ Musescore downloader was removed from the Chrome Web Store because of MuseScore 
 
 Please use this extension only for studying purposes.
 
-<img src="https://raw.githubusercontent.com/ingui-n/musescore-downloader/master/screenshots/screenshot1.png" alt="Beautiful image with extension on MuseScore website"/>
+<img src="https://raw.githubusercontent.com/ingui-n/musescore-downloader/master/screenshots/screenshot.png" alt="Beautiful image with extension on MuseScore website"/>
