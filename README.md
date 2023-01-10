@@ -7,24 +7,25 @@ This browser extension allows you to download:
 
 ⚠️ Doesn't work on official scores.
 
-Musescore downloader was removed from the Chrome Web Store because of MuseScore take down request.
-
 <img src="https://raw.githubusercontent.com/ingui-n/musescore-downloader/master/screenshots/extension.png" alt="Beautiful image of the extension"/>
 
 ## Installation
+### Automatic Installation:
+1. Download the extension from [Chrome Web Store](https://chrome.google.com/webstore/detail/music-score-downloader/jhogldboghgffknljgnomjkcfbapogdf)
+
 ### Manual installation:
 1. Go to [the latest release](https://github.com/ingui-n/musescore-downloader/releases/latest)
 2. Download the "musescore-downloader-packed.zip" file
 3. Extract the ZIP file
 
-<details>
+<!-- <details>
   <summary>For Chromium users: (click)</summary>
-
+-->
 4. Go to the browser addon manager [chrome://extensions/](chrome://extensions/)
 5. Enable "Developer mode" (at the top right)
 6. Click on "Load unpacked" button and select a directory with previously extracted files
 7. That's it! Extension is now ready to use 🎉
-</details>
+<!-- </details>
 
 <details>
   <summary>For Firefox users: (click)</summary>
@@ -33,23 +34,16 @@ Musescore downloader was removed from the Chrome Web Store because of MuseScore 
 5. Click on "Load Temporary Add-on" button and select the `manifest.json` file from previously extracted directory
 6. That's it! Extension is now ready to use 🎉
 </details>
-
-<!--
-### Automatic Installation:
-⚠️ Successfully tested only on Opera 94.0.4606.38, it may not work on every browser ⚠️
-1. Download the extension from [Crx4Chrome](https://f6.crx4chrome.com/crx.php?i=nnekmplngdkmmgaoinpoahbikhfiedgj&v=0.4.1)
-2. Click on "Go to Extensions" and then click to "Install" the extension
 -->
-
 
 ## Usage:
 1. Go to [MuseScore.com](https://musescore.com/)
 2. Open a music sheet
-3. Click to MuseScore Downloader icon
+3. Click to Music Score Downloader icon
 4. Select what you want to do
 
 ## Supported browsers:
-* Firefox
+<!-- * Firefox -->
 * Chrome
 * Opera
 * Brave
