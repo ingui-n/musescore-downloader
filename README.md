@@ -33,7 +33,7 @@ This browser extension allows you to download:
   <summary>For Firefox users: (click)</summary>
 
 1. Go to [the latest release](https://github.com/ingui-n/musescore-downloader/releases/latest)
-2. Click to the `musescore-downloader-manifest-v2.crx` file
+2. Click to the `musescore-downloader-manifest-v2.xpi` file
 3. A bubble with text and button should appear. Click on `Continue to Installation` and `Add`
 4. That's it! Extension is now ready to use 🎉
 </details>
