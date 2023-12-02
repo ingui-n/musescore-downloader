@@ -49,7 +49,7 @@ export const isMuseScoreUrl = url => {
 };
 
 export const isScoreUrl = url => {
-  return url.match(/^https?:\/\/musescore\.com\/user\/\d+\/scores\/\d+/) !== null;
+  return url.match(/^https?:\/\/musescore\.com\/(?:user\/\d+|\w+)\/scores\/\d+/) !== null;
 };
 
 export const setLoadingAnimation = loadingRef => {
