@@ -1,0 +1,5 @@
+.idea
+.prod
+
+node_modules
+dist
