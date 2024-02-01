@@ -10,8 +10,7 @@
     "128": "icon-128.png"
   },
   "permissions": [
-    "webRequest",
-    "storage"
+    "webRequest"
   ],
   "host_permissions": [
     "https://musescore.com/*",
