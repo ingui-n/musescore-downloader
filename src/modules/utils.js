@@ -18,18 +18,6 @@ export const messages = {
   downloadingUrl: {message: 'Downloading media', loading: true},
 };
 
-export const resetPageStorage = async (name, value = {}, type = 'local') => {
-  await browser.storage[type].set({[name]: value});
-};
-
-export const getTokens = async (type = 'local') => {
-  return (await browser.storage[type].get('tokens')).tokens;
-};
-
-export const setTokens = async (tokens, type = 'local') => {
-  await browser.storage[type].set({tokens});
-};
-
 export const updateCurrentTab = async () => {
   const [tab] = await browser.tabs.query({active: true, lastFocusedWindow: true});
   return tab;
@@ -88,45 +76,4 @@ export const resetBgColorAnimation = () => {
   setTimeout(() => {
     html.style.setProperty('--color-animation', 'background-migration 3s ease alternate infinite');
   }, 10);
-};
-
-export const fetchApiUrl = async (id, type, index = 0, token) => {
-  if (!token)
-    token = (await getTokens())[type];
-
-  return fetch(
-    `https://musescore.com/api/jmuse?id=${id}&index=${index}&type=${type}&v2=1`,
-    {headers: {authorization: token}}
-  )
-    .then(async res => {
-      if (res.ok) {
-        return (await res.json()).info.url;
-      } else {
-        return null;
-      }
-    });
-};
-
-export const fetchImageUrl = async url => {
-  try {
-    return await fetch(url)
-      .then(async res => {
-        if (res.ok) {
-          let data = await res.blob();
-
-          if (data.type === 'image/svg+xml') {
-            return data.text();
-          } else {
-            return new Promise((resolve, reject) => {
-              const reader = new FileReader()
-              reader.onloadend = () => resolve(reader.result);
-              reader.onerror = reject;
-              reader.readAsDataURL(data);
-            });
-          }
-        }
-      });
-  } catch (e) {
-    return null;
-  }
 };

@@ -1,75 +1,21 @@
 import browser from 'webextension-polyfill';
-import {fetchApiUrl, fetchImageUrl, getTokens, isScoreUrl, setTokens} from '../modules/utils';
 import Printer from "pdfmake";
 
-const findTokensInJSFile = async () => {
-  const sortTokens = async tokens => {
-    const sortedTokens = {};
-    const types = ['img', 'mp3', 'midi'];
+const allTokens = {};
 
-    for (const type of types) {
-      for (const token of tokens) {
-        const url = await fetchApiUrl(getScoreId(), type, 0, token);
+const getFirstImgUrl = () => {
+  const pngHref = document.querySelector('link[type="image/png"]')?.href;
+  const svgHref = document.querySelector('link[type="image/svg+xml"]')?.href;
 
-        if (url) {
-          sortedTokens[type] = token;
-          break;
-        }
-      }
-    }
-
-    return sortedTokens;
-  };
-
-  let authScriptLink = document.querySelector('link[href^="https://musescore.com/static/public/build/musescore_es6/2"]')?.href;
-
-  if (authScriptLink) {
-    await fetch(authScriptLink)
-      .then(async res => {
-        if (res.ok) {
-          const text = await res.text();
-
-          const match = [...text.matchAll(/"(\w{40})"/g)];
-          const tokensFound = [];
-
-          if (match) {
-            for (const token of match) {
-              tokensFound.push(token[1]);
-            }
-          }
-
-          const sortedTokens = await sortTokens(tokensFound);
-          const tokens = await getTokens();
-
-          if (Object.entries(sortedTokens).length > 0) {
-            for (const [type, token] of Object.entries(sortedTokens)) {
-              tokens[type] = token;
-            }
-
-            await setTokens(tokens);
-          }
-        }
-      })
-      .catch(() => null);
-  }
-};
-
-const checkTokens = async () => {
-  const tokens = await getTokens();
-
-  for (const token of Object.entries(tokens)) {
-    if (token[1] === '') {
-      const url = document.querySelector('meta[property="og:url"]')?.content;
-
-      if (isScoreUrl(url)) {
-        loadIframe();
-        break;
-      }
-    }
-  }
+  return pngHref || svgHref;
 };
 
 browser.runtime.onMessage.addListener((request, sender, sendResponse) => {
+  if (typeof request === 'object' && request.scoreData) {
+    allTokens[request.scoreData[0]] = request.scoreData[1];
+    return;
+  }
+
   const scoreId = getScoreId();
 
   if (request === 'isScorePage') {
@@ -160,41 +106,50 @@ const sendMessageToPopup = async type => {
 };
 
 const downloadSheetPages = async (scoreId, pagesNumber, round = 1) => {
-  const images = [];
-  let unknownPagesNumber = pagesNumber < 1;
+  if (pagesNumber < 1)
+    pagesNumber = 200;
 
-  if (unknownPagesNumber)
-    pagesNumber = 100;
+  const targetTokens = [];
 
-  for (let i = 0; i < pagesNumber; i++) {
-    const url = await fetchApiUrl(scoreId, 'img', i);
-
-    if (!url) {
-      if (i === 0 && round < 2) {
-        loadIframe();
-        await findTokensInJSFile();
-        return downloadSheetPages(scoreId, pagesNumber, 2);
-      }
-
-      await sendMessageToPopup('downloadError');
-      return;
-    }
-
-    let image = await fetchImageUrl(url);
-    
-    if (!image) {
-      if (unknownPagesNumber) {
-        break;
-      } else {
-        await sendMessageToPopup('downloadError');
-        return;
-      }
-    }
-
-    images.push(image);
+  for (let i = 1; i < pagesNumber; i++) {
+    targetTokens.push(allTokens[`${scoreId}_img_${i}`]);
   }
 
-  return images;
+  const imgUrls = await Promise.all([...targetTokens.map((token, i) =>
+    fetch(
+      `https://musescore.com/api/jmuse?id=${scoreId}&index=${i + 1}&type=img`,
+      {headers: {authorization: token}}
+    )
+      .then(res => res.json())
+      .then(res => res.info.url)
+  )]);
+
+  imgUrls.unshift(getFirstImgUrl());
+
+  return await Promise.all([...imgUrls.map(url => {
+      try {
+        return fetch(url)
+          .then(async res => {
+            if (res.ok) {
+              let data = await res.blob();
+
+              if (data.type === 'image/svg+xml') {
+                return data.text();
+              } else {
+                return new Promise((resolve, reject) => {
+                  const reader = new FileReader()
+                  reader.onloadend = () => resolve(reader.result);
+                  reader.onerror = reject;
+                  reader.readAsDataURL(data);
+                });
+              }
+            }
+          });
+      } catch (e) {
+        return null;
+      }
+    }
+  )]);
 };
 
 const generatePdf = async (pages = [], composer, title) => {
@@ -214,9 +169,9 @@ const generatePdf = async (pages = [], composer, title) => {
       if (/^<svg/.test(page)) {
         let svg = new DOMParser().parseFromString(page, "image/svg+xml");
         let {width, height} = await getImageSize(page);
-        
+
         svg.firstChild.setAttribute('viewBox', `0 0 ${width} ${height}`);
-        
+
         let svgString = new XMLSerializer().serializeToString(svg);
 
         docContent.push({svg: svgString, ...size, alignment: 'center'});
@@ -225,7 +180,7 @@ const generatePdf = async (pages = [], composer, title) => {
       }
     }
   }
-  
+
   const docDefinition = {
     content: docContent,
     pageMargins: 0,
@@ -244,13 +199,13 @@ const generatePdf = async (pages = [], composer, title) => {
 const getImageSize = async image => {
   if (/^<svg/.test(image)) {
     let svg = new DOMParser().parseFromString(image, "image/svg+xml");
-    
+
     const width = Math.round(svg.firstChild.width.baseVal.value * 10) / 10;
     const height = Math.round(svg.firstChild.height.baseVal.value * 10) / 10;
 
     return {width, height};
   } else {
-    return new Promise (resolve => {
+    return new Promise(resolve => {
       let i = new Image();
       i.onload = () => resolve({width: i.width, height: i.height});
       i.src = image;
@@ -258,14 +213,16 @@ const getImageSize = async image => {
   }
 };
 
-const loadIframe = () => {
-  const ifr = document.createElement('iframe');
+const fetchApiUrl = async (id, type, index = 0, token) => {
+  token = allTokens[`${id}_${type}_${index}`];
 
-  ifr.src = window.location.href + '/piano-tutorial';
-  ifr.style.width = '1000px';
-  ifr.style.height = '9000px';
-  ifr.style.position = 'fixed';
-  document.body.appendChild(ifr);
+  return fetch(
+    `https://musescore.com/api/jmuse?id=${id}&index=${index}&type=${type}`,
+    {headers: {authorization: token}}
+  )
+    .then(async res =>
+      res.ok ? (await res.json()).info.url : null
+    );
 };
 
 const downloadFile = url => {
@@ -273,4 +230,14 @@ const downloadFile = url => {
   window.location.assign(url);
 };
 
-checkTokens().catch();
+const loadIframe = () => {
+  const ifr = document.createElement('iframe');
+
+  ifr.src = window.location.href + '/piano-tutorial';
+  ifr.style.width = '1000px';
+  ifr.style.height = '200000px';
+  ifr.style.position = 'fixed';
+  document.body.appendChild(ifr);
+};
+
+loadIframe();
