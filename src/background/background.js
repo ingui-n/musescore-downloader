@@ -1,28 +1,28 @@
 import browser from 'webextension-polyfill';
-import {getTokens, resetPageStorage, setTokens} from '../modules/utils';
+import {updateCurrentTab} from "../modules/utils";
 
-browser.runtime.onInstalled.addListener(async () => {
-  await resetPageStorage('tokens', {img: '', mp3: '', midi: ''});
-});
-
-/** store tokens */
 browser.webRequest.onSendHeaders.addListener(
   async ({url, requestHeaders}) => {
-    const matchMediaType = url.match(/^https:\/\/musescore\.com\/api\/jmuse\?id=\d+&index=[01]&type=(\w+)&v2=1$/);
+    const matchMedia = url.match(/^https:\/\/musescore\.com\/api\/jmuse\?id=(\d+)&index=(\d+)&type=(\w+)$/);
 
-    if (matchMediaType) {
+    if (matchMedia) {
       const authHeader = requestHeaders.find(e => e.name === 'Authorization');
+
+      const id = matchMedia[1];
+      const index = matchMedia[2];
+      const type = matchMedia[3];
 
       if (authHeader) {
         const token = authHeader.value;
-        const tokens = await getTokens();
 
-        if (tokens[matchMediaType[1]] !== token) {
-          tokens[matchMediaType[1]] = token;
-          await setTokens(tokens);
-        }
+        const tab = await updateCurrentTab();
+        try {
+          await browser.tabs.sendMessage(tab.id, {scoreData: [`${id}_${type}_${index}`, token]}).catch(() => null);
+        } catch (e) {}
       }
     }
   },
-  {urls: ['https://musescore.com/api/jmuse?id=*&index=*&type=*&v2=1']}, ['requestHeaders']
+  {
+    urls: ['https://musescore.com/api/jmuse?id=*&index=*&type=*']
+  }, ['requestHeaders']
 );
