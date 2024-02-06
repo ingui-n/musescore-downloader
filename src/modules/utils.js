@@ -5,6 +5,7 @@ export const messages = {
   pageLoading: {message: 'Loading webpage', loading: true},
   badPage: {message: 'This extension works only on musescore website', loading: false},
   cannotDetect: {message: 'Cannot detect a score', loading: false},
+  cannotDownload: {message: 'Cannot download', loading: false},
   unknownError: {message: 'Something went wrong', loading: false},
   noConnection: {message: 'Refresh the score page please', loading: false},
   badMediaType: {message: 'Unsupported media type', loading: false},
@@ -76,4 +77,8 @@ export const resetBgColorAnimation = () => {
   setTimeout(() => {
     html.style.setProperty('--color-animation', 'background-migration 3s ease alternate infinite');
   }, 10);
+};
+
+export const delay = time => {
+  return new Promise(resolve => setTimeout(resolve, time));
 };
