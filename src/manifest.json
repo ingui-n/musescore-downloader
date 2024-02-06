@@ -27,6 +27,7 @@
       "matches": [
         "https://musescore.com/*"
       ],
+      "run_at": "document_start",
       "js": [
         "content.js"
       ]
