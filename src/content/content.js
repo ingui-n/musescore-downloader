@@ -133,34 +133,41 @@ const isScoreIdValid = scoreId => {
   return /^\d{7}$/.test(scoreId);
 };
 
-const openSheet = async (scoreId, attempt) => {
+const openSheet = async (scoreId, attempt = 0) => {
+  removeExpiredUrls();
   await sendMessageToPopup('getMetadata');
 
-  await sendMessageToPopup('downloadingPages');
-
   const tokensToFetch = [];
+  const currentUrls = [];
 
-  for (let i = 1; i <= scorePagesSum; i++) {
+  for (let i = 1; i < scorePagesSum; i++) {
     if (!allUrls['img_' + i]) {
       if (allTokens[`${scoreId}_img_${i}`]) {
         tokensToFetch.push(allTokens[`${scoreId}_img_${i}`]);
       } else {
+        console.log('attempt', attempt)
         if (attempt > 3)
           return sendMessageToPopup('downloadError');
 
         if (await loadImagesDiv()) {
-          console.log(allTokens);//todo
           return openSheet(scoreId, attempt + 1);
         } else {
-          await loadImagesIframe();
+          await loadImagesIframe();//todo change
           return openSheet(scoreId, attempt + 1);
         }
       }
+    } else {
+      currentUrls.push(allUrls['img_' + i].url);
     }
   }
 
-  console.log(allUrls)
-  console.log(allTokens);
+  if (tokensToFetch.length > 0) {
+    await sendMessageToPopup('downloadingPages');
+
+    //todo promise fetch and save to allUrls
+  }
+
+  console.log(162, tokensToFetch)
   return;
 
   if (pagesNumber === 0 && attempt === 0) {
@@ -479,7 +486,7 @@ const loadMidiDataWithClick = async () => {
 
   button.click();
 
-  await new Promise((resolve) => {
+  await new Promise(resolve => {
     if (window.location.pathname.endsWith('/piano-tutorial')) {
       resolve();
       return;
@@ -497,7 +504,8 @@ const loadImagesDiv = async () => {
 
   if (imgDiv) {
     imgDiv.style.height = '200000px';
-    setTimeout(() => imgDiv.style.height = 'auto', 20);
+    await delay(50);
+    imgDiv.style.height = 'auto';
     return true;
   }
   return false;
@@ -506,18 +514,19 @@ const loadImagesDiv = async () => {
 const loadImagesIframe = async () => {
   const ifr = document.createElement('iframe');
 
+  ifr.src = window.location.href;
   ifr.style.width = '1000px';
   ifr.style.height = '300000px';
   ifr.style.position = 'fixed';
   document.body.appendChild(ifr);
 
-  await new Promise((resolve) => {
+  await new Promise(resolve => {
     if (ifr.complete && ifr.readyState === 'complete') {
       resolve();
       return;
     }
 
-    ifr.addEventListener('load', () => resolve());
+    ifr.addEventListener('load', resolve);
   });
 };
 
