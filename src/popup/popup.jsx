@@ -11,7 +11,7 @@ import {
   updateCurrentTab,
 } from '../modules/utils';
 
-const Popup = () => {
+export default function Popup() {
   const [showContent, setShowContent] = useState(false);
   const [currentTab, setCurrentTab] = useState(null);
   const [showRefreshBtb, setShowRefreshBtb] = useState(false);
@@ -168,6 +168,4 @@ const Popup = () => {
       </>
     );
   }
-};
-
-export default Popup;
+}
