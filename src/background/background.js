@@ -10,14 +10,17 @@ browser.webRequest.onSendHeaders.addListener(
 
       const id = matchMedia[1];
       const index = matchMedia[2];
-      console.log(index)
       const type = matchMedia[3];
 
       if (authHeader) {
         const token = authHeader.value;
 
         const tab = await updateCurrentTab();
-        await browser.tabs.sendMessage(tab.id, {scoreData: [`${id}_${type}_${index}`, token]});
+        if (tab?.id) {
+          await browser.tabs.sendMessage(tab.id, {
+            scoreData: [`${id}_${type}_${index}`, token]
+          });
+        }
       }
     }
   },
@@ -38,13 +41,21 @@ browser.webRequest.onSendHeaders.addListener(
       date.setSeconds(date.getSeconds() + Number(expires));
 
       const index = matchMedia[1] || 0;
-      const type = matchMedia[2] === 'png' || 'svg' ? 'img' : matchMedia[2];
+      const type = matchMedia[2] === 'png' || matchMedia[2] === 'svg' ? 'img' : matchMedia[2];
 
       const tab = await updateCurrentTab();
-      await browser.tabs.sendMessage(tab.id, {scoreDataUrl: [`${type}_${index}`, {url, expiration: date.toISOString()}]});
+
+      if (tab?.id) {
+        await browser.tabs.sendMessage(tab.id, {
+          scoreDataUrl: [`${type}_${index}`, {
+            url,
+            expiration: date.toISOString()
+          }]
+        });
+      }
     }
   },
   {
     urls: ['https://s3.ultimate-guitar.com/musescore.scoredata/g/*/score*']
-  }
+  }, ['requestHeaders']
 );

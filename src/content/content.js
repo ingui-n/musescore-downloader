@@ -22,10 +22,9 @@ const setScoreProps = () => {
 
       if (obj?.thumbnailUrl)
         allUrls.img_0 = {
-          url: obj.thumbnailUrl,
+          url: getSvgUrlOfFirstImage(obj.thumbnailUrl),
           expiration: new Date(10000000000000).toISOString()
         };
-      console.log(obj)
       if (obj?.composer?.name)
         scoreComposer = obj.composer.name.replaceAll('\n', ' ');
       if (obj?.name)
@@ -38,24 +37,50 @@ const setScoreProps = () => {
     }
   }
 
-  if (!allUrls.img_0) {
-    const pngHref = document.querySelector('link[type="image/png"]')?.href;
-    const svgHref = document.querySelector('link[type="image/svg+xml"]')?.href;
-
-    if (pngHref || svgHref)
-      allUrls.img_0 = {
-        url: pngHref || svgHref,
-        expiration: new Date(10000000000000).toISOString()
-      };
-  }
-
+  if (!allUrls.img_0)
+    setFirstImage();
   if (!scoreComposer)
-    scoreComposer = document.querySelector('meta[property="musescore:composer"]')?.content?.replaceAll('\n', ' ');
+    setScoreComposer();
+  if (!scoreName)
+    setScoreName();
+  if (!scoreId)
+    setScoreId();
+  if (!scorePagesSum)
+    setScorePagesSum();
+};
 
-  if (scoreName)
-    scoreName = document.querySelector('meta[property="og:title"]')?.content;
+const setFirstImage = () => {
+  const svgHref = document.querySelector('link[type="image/svg+xml"]')?.href;
+  const pngHref = document.querySelector('link[type="image/png"]')?.href;
 
-  setScorePagesSum();
+  if (svgHref || pngHref)
+    allUrls.img_0 = {
+      url: svgHref || getSvgUrlOfFirstImage(pngHref),
+      expiration: new Date(10000000000000).toISOString()
+    };
+};
+
+const getSvgUrlOfFirstImage = pngUrl => {
+  let urlArray = pngUrl.split('.');
+  urlArray.pop();
+  urlArray.push('svg');
+
+  return urlArray.join('.');
+};
+
+const setScoreName = () => {
+  scoreName = document.querySelector('meta[property="og:title"]')?.content;
+};
+
+const setScoreComposer = () => {
+  scoreComposer = document.querySelector('meta[property="musescore:composer"]')?.content?.replaceAll('\n', ' ');
+};
+
+const setScoreId = () => {
+  const url =
+    document.querySelector('meta[property="og:url"]')?.content
+    ?? document.querySelector('meta[property^="twitter:app:url"]')?.content;
+  scoreId = url.split('/').pop();
 };
 
 const setScorePagesSum = () => {
@@ -84,22 +109,20 @@ const setScorePagesSum = () => {
 };
 
 browser.runtime.onMessage.addListener((request, sender, sendResponse) => {
+  if (request === 'isScorePage') {
+    sendResponse(isScoreIdValid(scoreId));
+    return;
+  }
+
   if (typeof request === 'object' && request.scoreData) {
     allTokens[request.scoreData[0]] = request.scoreData[1];
-    console.log('tokens', allTokens);
+    // console.log('tokens', allTokens);
     return;
   }
 
   if (typeof request === 'object' && request.scoreDataUrl) {
     allUrls[request.scoreDataUrl[0]] = request.scoreDataUrl[1];
-    console.log('urls', allUrls);
-    return;
-  }
-
-  const scoreId = getScoreId();
-
-  if (request === 'isScorePage') {
-    sendResponse(isScoreIdValid(scoreId));
+    // console.log('urls', allUrls);
     return;
   }
 
@@ -110,86 +133,29 @@ browser.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
   switch (request.label) {//todo
     case 'downloadSheet':
-      return downloadSheet(scoreId);
+      return downloadSheet();
     case 'openSheet':
-      return openSheet(scoreId);
+      return openSheet();
     case 'downloadAudio':
-      return downloadAudio(scoreId);
+      return downloadAudio();
     case 'downloadMidi':
-      return downloadMidi(scoreId);
+      return downloadMidi();
     default:
       return sendMessageToPopup('badMediaType');
   }
 });
 
-const getScoreId = () => {
-  const url =
-    document.querySelector('meta[property="og:url"]')?.content
-    ?? document.querySelector('meta[property^="twitter:app:url"]')?.content;
-  return url.split('/').pop();
-};
-
 const isScoreIdValid = scoreId => {
   return /^\d{7}$/.test(scoreId);
 };
 
-const openSheet = async (scoreId, attempt = 0) => {
-  removeExpiredUrls();
-  await sendMessageToPopup('getMetadata');
+const openSheet = async () => {//todo messages to popup
+  const pdfFile = await getPdfDocument();
 
-  const tokensToFetch = [];
-  const currentUrls = [];
-
-  for (let i = 1; i < scorePagesSum; i++) {
-    if (!allUrls['img_' + i]) {
-      if (allTokens[`${scoreId}_img_${i}`]) {
-        tokensToFetch.push(allTokens[`${scoreId}_img_${i}`]);
-      } else {
-        console.log('attempt', attempt)
-        if (attempt > 3)
-          return sendMessageToPopup('downloadError');
-
-        if (await loadImagesDiv()) {
-          return openSheet(scoreId, attempt + 1);
-        } else {
-          await loadImagesIframe();//todo change
-          return openSheet(scoreId, attempt + 1);
-        }
-      }
-    } else {
-      currentUrls.push(allUrls['img_' + i].url);
-    }
+  if (typeof pdfFile === 'object') {
+    pdfFile.open();
+    await sendMessageToPopup('downloadSuccess');
   }
-
-  if (tokensToFetch.length > 0) {
-    await sendMessageToPopup('downloadingPages');
-
-    //todo promise fetch and save to allUrls
-  }
-
-  console.log(162, tokensToFetch)
-  return;
-
-  if (pagesNumber === 0 && attempt === 0) {
-    //todo loadImagesDiv or loadImagesIframe
-    return openSheet(scoreId, attempt + 1);
-
-  }
-  const allTokensSum = getAllTokensSum(scoreId);
-
-  const allUrlsSum = getAllUrlsSum();
-
-
-  //todo iterate with allurls/alltokens
-
-  //todo test allUrls
-  //todo call every missing from allurls with alltokens - if doesnt exist - loadImagesDiv or loadImagesIframe
-
-  const sheetImages = await downloadSheetPages(scoreId, pagesNumber);
-
-  await sendMessageToPopup('generatePdf');
-  (await generatePdf(sheetImages, composer, title)).open();
-  await sendMessageToPopup('downloadSuccess');
 };
 
 const downloadSheet = async (scoreId) => {
@@ -197,14 +163,14 @@ const downloadSheet = async (scoreId) => {
   const {pagesNumber, composer, title} = getMetadata();
 
   await sendMessageToPopup('downloadingPages');
-  const sheetImages = await downloadSheetPages(scoreId, pagesNumber);
+  const sheetImages = await fetchImages(scoreId, pagesNumber);
 
   await sendMessageToPopup('generatePdf');
-  (await generatePdf(sheetImages, composer, title)).download(title);
+  (await generatePDF(sheetImages, composer, title)).download(title);
   await sendMessageToPopup('downloadSuccess');
 };
 
-const downloadAudio = async (scoreId, attempt = 0) => {
+const downloadAudio = async (attempt = 0) => {
   await sendMessageToPopup('urlRequest');
 
   if (allUrls.mp3_0) {
@@ -224,10 +190,53 @@ const downloadAudio = async (scoreId, attempt = 0) => {
     return sendMessageToPopup('cannotDownload');
 
   await loadData('mp3');
-  return downloadAudio(scoreId, attempt + 1);
+  return downloadAudio(attempt + 1);
 };
 
-const downloadMidi = async (scoreId, attempt = 0) => {
+const getPdfDocument = async (attempt = 0) => {
+  removeExpiredUrls();
+  await sendMessageToPopup('getMetadata');
+
+  const tokensToFetch = [];
+  const currentUrls = [allUrls.img_0.url];
+
+  for (let i = 1; i < scorePagesSum; i++) {
+    if (!allUrls['img_' + i]) {
+      if (allTokens[`${scoreId}_img_${i}`]) {
+        tokensToFetch.push({
+          index: i,
+          token: allTokens[`${scoreId}_img_${i}`]
+        });
+      } else {
+        if (attempt > 3) {
+          await sendMessageToPopup('downloadError');
+          return;
+        }
+
+        await loadImagesDiv();
+
+        if (!isAllImageTokensSet() && !isAllImageUrlsSet() && attempt > 0)
+          await loadImagesIframe();
+
+        return openSheet(attempt + 1);
+      }
+    } else {
+      currentUrls.push(allUrls['img_' + i].url);
+    }
+  }
+
+  if (tokensToFetch.length > 0) {
+    await sendMessageToPopup('downloadingPages');
+    currentUrls.push(...await fetchImageUrls(tokensToFetch));
+  }
+
+  const sheetImages = await fetchImages(currentUrls);
+
+  await sendMessageToPopup('generatePdf');
+  return generatePDF(sheetImages);
+};
+
+const downloadMidi = async (attempt = 0) => {
   if (allUrls.mid_0) {
     downloadFile(allUrls.mid_0.url);
     return sendMessageToPopup('downloadSuccess');
@@ -244,12 +253,10 @@ const downloadMidi = async (scoreId, attempt = 0) => {
   if (attempt > 2)
     return sendMessageToPopup('cannotDownload');
 
-  if (await loadMidiDataWithClick()) {
-    return downloadMidi(scoreId, attempt + 1);
-  } else {
+  if (!await loadMidiDataWithClick())
     await loadMidiDataWithIframe();
-    return downloadMidi(scoreId, attempt + 1);
-  }
+
+  return downloadMidi(attempt + 1);
 };
 
 const getMetadata = () => {
@@ -276,58 +283,37 @@ const sendMessageToPopup = async type => {
   await browser.runtime.sendMessage(type).catch(() => null);
 };
 
-const downloadImageUrls = async (images) => {
-
-};
-
-const downloadSheetPages = async (scoreId, pagesNumber, round = 1) => {
-  if (pagesNumber < 1)
-    pagesNumber = 200;
-
-  const targetTokens = [];
-
-  for (let i = 1; i < pagesNumber; i++) {
-    targetTokens.push(allTokens[`${scoreId}_img_${i}`]);
-  }
-
-  const imgUrls = await Promise.all([...targetTokens.map((token, i) =>
+const fetchImageUrls = async tokens => {
+  return Promise.all([...tokens.map(({index, token}) =>
     fetch(
-      `https://musescore.com/api/jmuse?id=${scoreId}&index=${i + 1}&type=img`,
+      `https://musescore.com/api/jmuse?id=${scoreId}&index=${index}&type=img`,
       {headers: {authorization: token}}
     )
       .then(res => res.json())
       .then(res => res.info.url)
   )]);
+};
 
-  imgUrls.unshift(setScoreProps());
-
-  return await Promise.all([...imgUrls.map(url => {
-      try {
-        return fetch(url)
-          .then(async res => {
-            if (res.ok) {
-              let data = await res.blob();
-
-              if (data.type === 'image/svg+xml') {
-                return data.text();
-              } else {
-                return new Promise((resolve, reject) => {
-                  const reader = new FileReader()
-                  reader.onloadend = () => resolve(reader.result);
-                  reader.onerror = reject;
-                  reader.readAsDataURL(data);
-                });
-              }
-            }
+const fetchImages = async urls => {
+  return Promise.all([...urls.map(url =>
+    fetch(url)
+      .then(res => res.blob())
+      .then(blob => {
+        if (blob.type === 'image/svg+xml') {
+          return blob.text();
+        } else {
+          return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(reader.result);
+            reader.onerror = reject;
+            reader.readAsDataURL(blob);
           });
-      } catch (e) {
-        return null;
-      }
-    }
+        }
+      })
   )]);
 };
 
-const generatePdf = async (pages = [], composer, title) => {
+const generatePDF = async (pages = []) => {
   const docContent = [];
   let pageOrientation = 'portrait';
   let size = {width: 575, height: 822};
@@ -337,7 +323,7 @@ const generatePdf = async (pages = [], composer, title) => {
 
     if (imageSize.width > imageSize.height) {
       pageOrientation = 'landscape';
-      size.width = [size.height, size.height = size.width][0];
+      [size.width, size.height] = [size.height, size.width];
     }
 
     for (const page of pages) {
@@ -363,8 +349,8 @@ const generatePdf = async (pages = [], composer, title) => {
     pageSize: 'A4',
     pageOrientation,
     info: {
-      title: title,
-      author: composer || ''
+      title: scoreName || '',
+      author: scoreComposer || ''
     }
   };
 
@@ -436,6 +422,24 @@ const removeExpiredUrls = () => {
   }
 };
 
+const isAllImageTokensSet = () => {
+  for (let i = 1; i < scorePagesSum; i++) {
+    if (!allTokens[`${scoreId}_img_${i}`])
+      return false;
+  }
+
+  return true;
+};
+
+const isAllImageUrlsSet = () => {
+  for (let i = 1; i < scorePagesSum; i++) {
+    if (!allUrls[`img_${i}`])
+      return false;
+  }
+
+  return true;
+};
+
 const loadData = async type => {
   if (type === 'img') {
     const imgDiv = document.querySelector('#jmuse-scroller-component')?.parentElement;
@@ -503,9 +507,11 @@ const loadImagesDiv = async () => {
   const imgDiv = document.querySelector('#jmuse-scroller-component')?.parentElement;
 
   if (imgDiv) {
+    document.body.style.overflow = 'hidden';
     imgDiv.style.height = '200000px';
     await delay(50);
     imgDiv.style.height = 'auto';
+
     return true;
   }
   return false;
@@ -536,6 +542,8 @@ setTimeout(() => {
   document.querySelector('.N30cN').addEventListener('click', () => {
     console.log('A')
     loadImagesDiv().then(() => console.log(2));
+    console.log(allUrls)
+    console.log(allTokens)
   });
   // setScoreProps()
 }, 5000);
