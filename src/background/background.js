@@ -8,12 +8,11 @@ browser.webRequest.onSendHeaders.addListener(
     if (matchMedia) {
       const authHeader = requestHeaders.find(e => e.name === 'Authorization');
 
-      const id = matchMedia[1];
-      const index = matchMedia[2];
-      const type = matchMedia[3];
-
       if (authHeader) {
         const token = authHeader.value;
+        const id = matchMedia[1];
+        const index = matchMedia[2];
+        const type = matchMedia[3];
 
         const tab = await updateCurrentTab();
         if (tab?.id) {
@@ -26,36 +25,5 @@ browser.webRequest.onSendHeaders.addListener(
   },
   {
     urls: ['https://musescore.com/api/jmuse?id=*&index=*&type=*']//todo test url by params
-  }, ['requestHeaders']
-);
-
-browser.webRequest.onSendHeaders.addListener(
-  async ({url}) => {
-    const matchMedia = url.match(/^https:\/\/s3\.ultimate-guitar\.com\/musescore\.scoredata\/g\/\w+\/score_?(\d+)?\.(\w{3})/);
-
-    if (matchMedia) {
-      const urlParams = new URLSearchParams(new URL(url).search);
-      const date = new Date();
-      const expires = urlParams.get('X-Amz-Expires');
-
-      date.setSeconds(date.getSeconds() + Number(expires));
-
-      const index = matchMedia[1] || 0;
-      const type = matchMedia[2] === 'png' || matchMedia[2] === 'svg' ? 'img' : matchMedia[2];
-
-      const tab = await updateCurrentTab();
-
-      if (tab?.id) {
-        await browser.tabs.sendMessage(tab.id, {
-          scoreDataUrl: [`${type}_${index}`, {
-            url,
-            expiration: date.toISOString()
-          }]
-        });
-      }
-    }
-  },
-  {
-    urls: ['https://s3.ultimate-guitar.com/musescore.scoredata/g/*/score*']
   }, ['requestHeaders']
 );
