@@ -2,7 +2,6 @@ import React, {useEffect, useRef, useState} from 'react';
 import browser from 'webextension-polyfill';
 import './popup.css';
 import {
-  messages,
   isConnectionOk,
   isMuseScoreUrl,
   isScoreUrl,
@@ -14,11 +13,20 @@ import {
 export default function Popup() {
   const [showContent, setShowContent] = useState(false);
   const [currentTab, setCurrentTab] = useState(null);
-  const [showRefreshBtb, setShowRefreshBtb] = useState(false);
-  const [message, setMessage] = useState(messages.initializing);
+  const [showSingleBtb, setShowSingleBtb] = useState(false);
+  const [singleBtbText, setSingleBtbText] = useState('');
+  const [messageState, setMessageState] = useState({message: 'Loading extension', loading: false});
   const loadingRef = useRef(null);
 
   useEffect(() => {
+    browser.runtime.onMessage.addListener(request => {
+      if (typeof request === 'object' && request.message) {
+        showMessage(request.loading ? {...request, btnText: 'Stop', showBtn: true} : request);
+      }
+    });
+
+    setLoadingAnimation(loadingRef);
+
     (async () => {
       const curr = await updateCurrentTab();
       setCurrentTab(curr);
@@ -40,29 +48,24 @@ export default function Popup() {
   useEffect(() => {
     if (currentTab) {
       initContent().catch(() => {
-        showMessage('unknownError');
+        showMessage({message: 'Something went wrong'});
       });
     }
   }, [currentTab]);
 
   const initContent = async () => {
-    showMessage('pageLoading');
+    showMessage({message: 'Loading webpage', loading: true});
 
     if (currentTab.status !== 'complete')
       return;
 
-    if (!currentTab.url) {
-      showMessage('badPage');
-      return;
-    }
-
-    if (!isMuseScoreUrl(currentTab.url)) {
-      showMessage('badPage');
+    if (!currentTab.url || !isMuseScoreUrl(currentTab.url)) {
+      showMessage({message: 'This extension works only on musescore website'});
       return;
     }
 
     if (!(await isConnectionOk(currentTab.id))) {
-      showMessage('noConnection');
+      showMessage({message: 'Refresh the score page please', showBtn: true, btnText: 'Refresh'});
       return;
     }
 
@@ -70,42 +73,64 @@ export default function Popup() {
       const isScorePage = await browser.tabs.sendMessage(currentTab.id, 'isScorePage');
 
       if (!isScorePage) {
-        showMessage('cannotDetect');
+        showMessage({message: 'Cannot detect a score'});
         return;
       }
+    }
+
+    const latestProgressMessage = await browser.tabs.sendMessage(currentTab.id, 'getLatestMessage');
+
+    if (latestProgressMessage) {
+      showMessage({...latestProgressMessage, showBtn: true, btnText: 'Stop'});
+      return;
     }
 
     setShowContent(true);
     resetBgColorAnimation();
   };
 
-  const showMessage = (type) => {
-    if (!messages[type])
-      return;
-
+  const showMessage = ({message, loading = false, showBtn = false, btnText = ''}) => {
     setShowContent(false);
-    setMessage(messages[type]);
+    setMessageState({message, loading});
 
-    if (messages[type].loading)
+    if (loading)
       setLoadingAnimation(loadingRef);
 
-    setShowRefreshBtb(type === 'noConnection');
-    resetBgColorAnimation();
+    if (btnText)
+      setSingleBtbText(btnText);
+
+    setShowSingleBtb(showBtn);
   };
 
-  const requestMedia = async (type, label) => {
-    showMessage('sendingRequest');
-    await browser.tabs.sendMessage(currentTab.id, {type, label});
+  const requestMedia = async type => {
+    showMessage({message: 'Sending request', loading: true});
 
-    browser.runtime.onMessage.addListener(request => {
-      if (messages[request])
-        showMessage(request);
-    });
+    try {
+      await browser.tabs.sendMessage(currentTab.id, type);
+    } catch (e) {
+    }
   };
 
-  const refreshPages = () => {
-    browser.tabs.reload();
+  const handleSingleBtn = async () => {
+    if (singleBtbText === 'Refresh') {
+      await refreshPages();
+    } else if (singleBtbText === 'Stop') {
+      await sendStopSignal();
+    }
+  };
+
+  const refreshPages = async () => {
+    await browser.tabs.reload();
     window.location.reload();
+  };
+
+  const sendStopSignal = async () => {
+    const isStopped = await browser.tabs.sendMessage(currentTab.id, 'hardStop');
+
+    if (isStopped) {
+      setShowContent(true);
+      resetBgColorAnimation();
+    }
   };
 
   if (showContent) {
@@ -118,24 +143,24 @@ export default function Popup() {
           <div className='fun__content'>
             <div>
               <button
-                onClick={() => requestMedia('img', 'openSheet')}
+                onClick={() => requestMedia('openSheet')}
                 className='btn__fun sheet__open'
               >Open Sheet
               </button>
               <button
-                onClick={() => requestMedia('img', 'downloadSheet')}
+                onClick={() => requestMedia('downloadSheet')}
                 className='btn__fun sheet__download'
               >Download Sheet
               </button>
             </div>
             <div>
               <button
-                onClick={() => requestMedia('mp3', 'downloadAudio')}
+                onClick={() => requestMedia('downloadAudio')}
                 className='btn__fun audio__download'
               >Download Audio
               </button>
               <button
-                onClick={() => requestMedia('midi', 'downloadMidi')}
+                onClick={() => requestMedia('downloadMidi')}
                 className='btn__fun midi__download'
               >Download Midi
               </button>
@@ -152,15 +177,15 @@ export default function Popup() {
             <h2 className='header__title'>MS Downloader</h2>
           </div>
           <div className='message__div'>
-            <p className='message__text'>{message.message}</p>
+            <p className='message__text'>{messageState.message}</p>
             {
-              message.loading &&
+              messageState.loading &&
               <pre ref={loadingRef} className='message__loading'></pre>
             }
             {
-              showRefreshBtb &&
+              showSingleBtb &&
               <div className='fun__content'>
-                <button className='btn__fun btn__refresh' onClick={refreshPages}>Refresh</button>
+                <button className='btn__fun btn__single' onClick={handleSingleBtn}>{singleBtbText}</button>
               </div>
             }
           </div>

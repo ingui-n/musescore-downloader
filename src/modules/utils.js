@@ -1,23 +1,6 @@
 import browser from 'webextension-polyfill';
 
-export const messages = {
-  initializing: {message: 'Loading extension', loading: true},
-  pageLoading: {message: 'Loading webpage', loading: true},
-  badPage: {message: 'This extension works only on musescore website', loading: false},
-  cannotDetect: {message: 'Cannot detect a score', loading: false},
-  cannotDownload: {message: 'Cannot download', loading: false},
-  unknownError: {message: 'Something went wrong', loading: false},
-  noConnection: {message: 'Refresh the score page please', loading: false},
-  badMediaType: {message: 'Unsupported media type', loading: false},
-  downloadSuccess: {message: 'Media downloaded successfully', loading: false},
-  downloadError: {message: 'Cannot download media', loading: false},
-  sendingRequest: {message: 'Sending request', loading: true},
-  getMetadata: {message: 'Gathering metadata', loading: true},
-  downloadingPages: {message: 'Downloading pages', loading: true},
-  generatePdf: {message: 'Generating PDF file', loading: true},
-  urlRequest: {message: 'Requesting url address', loading: true},
-  downloadingUrl: {message: 'Downloading media', loading: true},
-};
+let loadingAnimationInterval;
 
 export const updateCurrentTab = async () => {
   const [tab] = await browser.tabs.query({active: true, lastFocusedWindow: true});
@@ -44,7 +27,8 @@ export const isScoreUrl = url => {
 export const setLoadingAnimation = loadingRef => {
   const intervalHandler = () => {
     if (!loadingRef.current) {
-      clearInterval(interval);
+      clearInterval(loadingAnimationInterval);
+      loadingAnimationInterval = undefined;
       return;
     }
 
@@ -64,10 +48,16 @@ export const setLoadingAnimation = loadingRef => {
     direction ? i++ : i--;
   };
 
+  if (loadingAnimationInterval)
+    return;
+
   let direction = false;
   let i = 0;
 
-  const interval = setInterval(intervalHandler, 85);
+  resetBgColorAnimation();
+  intervalHandler();
+
+  loadingAnimationInterval = setInterval(intervalHandler, 85);
 };
 
 export const resetBgColorAnimation = () => {
