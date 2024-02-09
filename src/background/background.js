@@ -3,27 +3,28 @@ import {updateCurrentTab} from "../modules/utils";
 
 browser.webRequest.onSendHeaders.addListener(
   async ({url, requestHeaders}) => {
-    const matchMedia = url.match(/^https:\/\/musescore\.com\/api\/jmuse\?id=(\d+)&index=(\d+)&type=(\w+)$/);
+    const search = new URL(url).searchParams;
 
-    if (matchMedia) {
-      const authHeader = requestHeaders.find(e => e.name === 'Authorization');
+    const id = search.get('id');
+    const index = search.get('index');
+    const type = search.get('type');
 
-      if (authHeader) {
-        const token = authHeader.value;
-        const id = matchMedia[1];
-        const index = matchMedia[2];
-        const type = matchMedia[3];
+    if (!id || !index || !type)
+      return;
 
-        const tab = await updateCurrentTab();
-        if (tab?.id) {
-          await browser.tabs.sendMessage(tab.id, {
-            scoreData: [`${id}_${type}_${index}`, token]
-          });
-        }
-      }
+    const token = requestHeaders.find(e => e.name === 'Authorization')?.value;
+
+    if (!token)
+      return;
+
+    const tab = await updateCurrentTab();
+    if (tab?.id) {
+      await browser.tabs.sendMessage(tab.id, {
+        scoreData: [`${id}_${type}_${index}`, token]
+      });
     }
   },
   {
-    urls: ['https://musescore.com/api/jmuse?id=*&index=*&type=*']//todo test url by params
+    urls: ['https://musescore.com/api/jmuse*']
   }, ['requestHeaders']
 );
