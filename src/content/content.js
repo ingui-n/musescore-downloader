@@ -131,10 +131,11 @@ browser.runtime.onMessage.addListener((request, sender, sendResponse) => {
     return;
   }
 
-  if (typeof request !== 'string')
+  if (typeof request !== 'string' || request.length === 0)
     return;
 
   abortController = new AbortController();
+
 
   switch (request) {
     case 'openSheet':
@@ -142,9 +143,9 @@ browser.runtime.onMessage.addListener((request, sender, sendResponse) => {
     case 'downloadSheet':
       return new Promise(downloadSheet);
     case 'downloadAudio':
-      return downloadAudio();
+      return new Promise(downloadAudio);
     case 'downloadMidi':
-      return downloadMidi();
+      return new Promise(downloadMidi);
   }
 });
 
@@ -153,7 +154,7 @@ const isScoreIdValid = scoreId => {
 };
 
 const openSheet = async (resolve, reject) => {
-  abortController.signal.addEventListener( 'abort', reject);
+  abortController.signal.addEventListener('abort', reject);
 
   if (pdfFile) {
     await sendMessageToPopup('PDF successfully generated');
@@ -169,7 +170,7 @@ const openSheet = async (resolve, reject) => {
 };
 
 const downloadSheet = async (resolve, reject) => {
-  abortController.signal.addEventListener( 'abort', reject);
+  abortController.signal.addEventListener('abort', reject);
 
   if (pdfFile) {
     await sendMessageToPopup('PDF successfully generated');
@@ -239,7 +240,12 @@ const pdfBuild = async (attempt = 0) => {
   await generatePDF(sheetImages);
 };
 
-const downloadAudio = async (attempt = 0) => {
+const downloadAudio = async (resolve, reject, attempt = 0) => {
+  if (attempt === 0)
+    abortController.signal.addEventListener('abort', reject);
+  if (abortController.signal.aborted)
+    return;
+
   if (allTokens[`${scoreId}_mp3_0`]) {
     await sendMessageToPopup('Retrieving audio link', true);
     const dataUrl = await fetchApiUrl('mp3', allTokens[`${scoreId}_mp3_0`]);
@@ -252,11 +258,17 @@ const downloadAudio = async (attempt = 0) => {
   if (attempt > 2)
     return sendMessageToPopup('Failed to download audio');
 
+  await sendMessageToPopup('Loading data', true);
   await loadMp3Data();
-  return downloadAudio(attempt + 1);
+  return downloadAudio(resolve, reject, attempt + 1);
 };
 
-const downloadMidi = async (attempt = 0) => {
+const downloadMidi = async (resolve, reject, attempt = 0) => {
+  if (attempt === 0)
+    abortController.signal.addEventListener('abort', reject);
+  if (abortController.signal.aborted)
+    return;
+
   if (allTokens[`${scoreId}_midi_0`]) {
     await sendMessageToPopup('Retrieving midi link', true);
     const dataUrl = await fetchApiUrl('midi', allTokens[`${scoreId}_midi_0`]);
@@ -269,15 +281,15 @@ const downloadMidi = async (attempt = 0) => {
   if (attempt > 2)
     return sendMessageToPopup('Failed to download midi');
 
+  await sendMessageToPopup('Loading data', true);
+
   if (!await loadMidiDataWithClick())
     await loadMidiDataWithIframe();
 
-  return downloadMidi(attempt + 1);
+  return downloadMidi(resolve, reject, attempt + 1);
 };
 
 const sendMessageToPopup = async (message, loading = false) => {
-  // await setToStorage({message, loading});
-
   latestProgressMessage = loading ? {message, loading} : null;
   await browser.runtime.sendMessage({message, loading}).catch(() => null);
 };
