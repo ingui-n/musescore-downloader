@@ -218,7 +218,7 @@ const pdfBuild = async (attempt = 0) => {
   if (abortController.signal.aborted)
     return;
 
-  await sendMessageToPopup('Retrieving page 1', true);
+  await sendMessageToPopup(`Retrieving page 1/${scorePagesSum}`, true);
 
   let data = await fetchImageUrl(firstImage);
   sheetImages.push(data);
@@ -228,7 +228,7 @@ const pdfBuild = async (attempt = 0) => {
       if (abortController.signal.aborted)
         return;
 
-      await sendMessageToPopup(`Retrieving page ${i + 2}`, true);
+      await sendMessageToPopup(`Retrieving page ${i + 2}/${scorePagesSum}`, true);
 
       let url = await fetchApiUrl('img', tokensToFetch[i].token, tokensToFetch[i].index);
       let data = await fetchImageUrl(url);
