@@ -442,17 +442,30 @@ const loadMidiDataWithClick = async () => {
 
   button.click();
 
-  await new Promise(resolve => {
+  const isMidiPartLoaded = await new Promise(resolve => {
     if (window.location.pathname.endsWith('/piano-tutorial')) {
-      resolve();
-      return;
+      resolve(true);
     }
 
-    navigation.addEventListener("navigate", () => resolve());
+    const interval = setInterval(() => {
+      if (window.location.pathname.endsWith('/piano-tutorial')) {
+        clearInterval(interval);
+        resolve(true);
+      }
+    }, 50);
+
+    setTimeout(() => {
+      clearInterval(interval);
+      resolve(false);
+    }, 2000);
   });
 
-  button.click();
-  return true;
+  if (isMidiPartLoaded) {
+    button.click();
+    return true;
+  }
+
+  return false;
 };
 
 const loadImagesDiv = async () => {
