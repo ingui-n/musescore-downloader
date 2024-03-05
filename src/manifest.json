@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Music Score Downloader",
   "description": "This extension allows you to download sheets, audio and midi files",
-  "version": "0.5.3",
+  "version": "0.5.5",
   "icons": {
     "16": "icon-16.png",
     "32": "icon-32.png",

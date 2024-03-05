@@ -25,7 +25,7 @@ const setScoreProps = () => {
         continue;
 
       if (obj?.thumbnailUrl)
-        firstImage = getSvgUrlOfFirstImage(obj.thumbnailUrl);
+        firstImage = obj.thumbnailUrl;
       if (obj?.composer?.name)
         scoreComposer = obj.composer.name.replaceAll('\n', ' ');
       if (obj?.name)
@@ -38,7 +38,7 @@ const setScoreProps = () => {
     }
   }
 
-  if (!firstImage)
+  if (!firstImage || firstImage.includes('score_0.png'))
     setFirstImage();
   if (!scoreComposer)
     setScoreComposer();
@@ -51,19 +51,21 @@ const setScoreProps = () => {
 };
 
 const setFirstImage = () => {
-  const svgHref = document.querySelector('link[type="image/svg+xml"]')?.href;
-  const pngHref = document.querySelector('link[type="image/png"]')?.href;
+  const svgLinks = document.querySelectorAll('link[type="image/svg+xml"]');
+  for (const link of svgLinks) {
+    if (link.href.includes('score_0.svg')) {
+      firstImage = link.href;
+      return;
+    }
+  }
 
-  if (svgHref || pngHref)
-    firstImage = svgHref || getSvgUrlOfFirstImage(pngHref);
-};
-
-const getSvgUrlOfFirstImage = pngUrl => {
-  let urlArray = pngUrl.split('.');
-  urlArray.pop();
-  urlArray.push('svg');
-
-  return urlArray.join('.');
+  const pngLinks = document.querySelectorAll('link[type="image/png"]');
+  for (const link of pngLinks) {
+    if (link.href.includes('score_0.png')) {
+      firstImage = link.href;
+      return;
+    }
+  }
 };
 
 const setScoreName = () => {
