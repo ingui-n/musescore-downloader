@@ -3,12 +3,12 @@
 
 # MuseScore Downloader
 
-This browser extension allows you to download:
-* audio - mp3
-* music sheets - pdf
-* midi - mid
+Browser extension allowing you to download:
+* audio - MP3
+* music sheets - PDF
+* midi - MID
 
-⚠️ Doesn't work on official scores.
+⚠️ Doesn't work with official scores. ⚠️
 
 <img src="https://raw.githubusercontent.com/ingui-n/musescore-downloader/master/screenshots/extension.png" alt="Beautiful image of the extension"/>
 
@@ -21,7 +21,7 @@ This browser extension allows you to download:
   <summary>For Chromium users: (click)</summary>
 
 1. Go to [the latest release](https://github.com/ingui-n/musescore-downloader/releases/latest)
-2. Download the `musescore-downloader-manifest-v3.crx` file
+2. Download the `musescore-downloader-0.x.x-manifest-v3.crx` file
 3. Go to the browser extension manager [chrome://extensions/](chrome://extensions/)
 4. Enable `Developer mode` (at the top right)
 5. Drag and drop the file downloaded in the previous step into the browser window and click to install
@@ -33,7 +33,7 @@ This browser extension allows you to download:
   <summary>For Firefox users: (click)</summary>
 
 1. Go to [the latest release](https://github.com/ingui-n/musescore-downloader/releases/latest)
-2. Click to the `musescore-downloader-manifest-v2.xpi` file
+2. Click to the `musescore-downloader-0.x.x-manifest-v2.xpi` file
 3. A bubble with text and button should appear. Click on `Continue to Installation` and `Add`
 4. That's it! Extension is now ready to use 🎉
 </details>
@@ -42,7 +42,7 @@ This browser extension allows you to download:
 ## Usage:
 1. Go to [MuseScore.com](https://musescore.com/)
 2. Open a music sheet
-3. Click to Music Score Downloader icon
+3. Click to Music Score Downloader icon in the extensions tab
 4. Select what you want to do
 
 ## Supported browsers:

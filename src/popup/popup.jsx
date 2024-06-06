@@ -2,6 +2,7 @@ import React, {useEffect, useRef, useState} from 'react';
 import browser from 'webextension-polyfill';
 import './popup.css';
 import {
+  delay,
   isConnectionOk,
   isMuseScoreUrl,
   isScoreUrl,
@@ -19,9 +20,17 @@ export default function Popup() {
   const loadingRef = useRef(null);
 
   useEffect(() => {
-    browser.runtime.onMessage.addListener(request => {
-      if (typeof request === 'object' && request.message) {
+    browser.runtime.onMessage.addListener(async request => {
+      if (typeof request !== 'object')
+        return;
+
+      if (request.message) {
         showMessage(request.loading ? {...request, btnText: 'Stop', showBtn: true} : request);
+      }
+      if (request.reset) {
+        await delay(750);
+        setShowContent(true);
+        resetBgColorAnimation();
       }
     });
 

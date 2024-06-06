@@ -159,13 +159,13 @@ const openSheet = async (resolve, reject) => {
   abortController.signal.addEventListener('abort', reject);
 
   if (pdfFile) {
-    await sendMessageToPopup('PDF successfully generated');
+    await sendMessageToPopup('PDF successfully generated', false, true);
     resolve(pdfFile.open());
   } else {
     await pdfBuild();
 
     if (pdfFile) {
-      await sendMessageToPopup('PDF successfully generated');
+      await sendMessageToPopup('PDF successfully generated', false, true);
       resolve(pdfFile.open());
     }
   }
@@ -175,14 +175,14 @@ const downloadSheet = async (resolve, reject) => {
   abortController.signal.addEventListener('abort', reject);
 
   if (pdfFile) {
-    await sendMessageToPopup('PDF successfully generated');
-    pdfFile.download(scoreName);
+    await sendMessageToPopup('PDF successfully generated', false, true);
+    pdfFile.download(scoreName + '.pdf');
   } else {
     await pdfBuild();
 
     if (pdfFile) {
-      await sendMessageToPopup('PDF successfully generated');
-      pdfFile.download(scoreName);
+      await sendMessageToPopup('PDF successfully generated', false, true);
+      pdfFile.download(scoreName + '.pdf');
     }
   }
 };
@@ -254,7 +254,7 @@ const downloadAudio = async (resolve, reject, attempt = 0) => {
     await sendMessageToPopup('Downloading link', true);
 
     downloadFile(dataUrl);
-    return sendMessageToPopup('Audio downloaded successfully');
+    return sendMessageToPopup('Audio downloaded successfully', false, true);
   }
 
   if (attempt > 2)
@@ -277,7 +277,7 @@ const downloadMidi = async (resolve, reject, attempt = 0) => {
     await sendMessageToPopup('Downloading link', true);
 
     downloadFile(dataUrl);
-    return sendMessageToPopup('Midi downloaded successfully');
+    return sendMessageToPopup('Midi downloaded successfully', false, true);
   }
 
   if (attempt > 2)
@@ -291,13 +291,13 @@ const downloadMidi = async (resolve, reject, attempt = 0) => {
   return downloadMidi(resolve, reject, attempt + 1);
 };
 
-const sendMessageToPopup = async (message, loading = false) => {
+const sendMessageToPopup = async (message, loading = false, reset = false) => {
   latestProgressMessage = loading ? {message, loading} : null;
-  await browser.runtime.sendMessage({message, loading}).catch(() => null);
+  await browser.runtime.sendMessage({message, loading, reset}).catch(() => null);
 };
 
 const fetchApiUrl = async (type, token, index = 0) => {
-  return fetch(
+  return await fetch(
     `https://musescore.com/api/jmuse?id=${scoreId}&index=${index}&type=${type}`,
     {headers: {authorization: token}}
   )
@@ -306,7 +306,7 @@ const fetchApiUrl = async (type, token, index = 0) => {
 };
 
 const fetchImageUrl = async url => {
-  return fetch(url)
+  return await fetch(url)
     .then(res => res.blob())
     .then(async blob => {
       if (blob.type === 'image/svg+xml') {
@@ -396,8 +396,8 @@ const getImageSize = async image => {
 };
 
 const downloadFile = url => {
-  window.open(url);
-  // window.location.assign(url);
+  // window.open(url);
+  window.location.assign(url);
 };
 
 const isAllImageTokensSet = () => {
