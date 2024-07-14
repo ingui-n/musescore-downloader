@@ -9,8 +9,7 @@ export const updateCurrentTab = async () => {
 
 export const isConnectionOk = async tabId => {
   try {
-    await browser.tabs.sendMessage(tabId, '');
-    return true;
+    return !!(await browser.tabs.sendMessage(tabId, 'isConnectionOk'));
   } catch (e) {
     return false;
   }
@@ -71,4 +70,20 @@ export const resetBgColorAnimation = () => {
 
 export const delay = time => {
   return new Promise(resolve => setTimeout(resolve, time));
+};
+
+export const fetchApiUrl = async (scoreId, token, type, index = 0) => {
+  return await fetch(
+    `https://musescore.com/api/jmuse?id=${scoreId}&index=${index}&type=${type}`,
+    {headers: {authorization: token}}
+  )
+    .then(res => res.ok ? res.json() : null)
+    .then(res => res ? res.info.url : null);
+};
+
+export const promiseTimeout = async (promise, time) => {
+  return await Promise.race([
+    promise,
+    new Promise((_, reject) => setTimeout(() => reject('F'), time))
+  ]);
 };

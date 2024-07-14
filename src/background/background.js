@@ -18,6 +18,7 @@ browser.webRequest.onSendHeaders.addListener(
       return;
 
     const tab = await updateCurrentTab();
+
     if (tab?.id) {
       await browser.tabs.sendMessage(tab.id, {
         scoreData: [`${id}_${type}_${index}`, token]
