@@ -1,20 +1,25 @@
 import browser from 'webextension-polyfill';
 import Printer from "pdfmake";
-import {delay} from "../modules/utils";
+import {getMediaUrlWithAlgorithm} from "./tokenAlgorithm";
+import {getMediaUrlWithScrape} from "./scrape";
+import {promiseTimeout} from "../modules/utils";
 
 let abortController;
 
-const allTokens = {};
+let isInitFunctionOver = false;
+let isOnMobile = false;
 let firstImage = '';
 let scoreUrl = '';
 let scoreName = '';
 let scoreComposer = '';
-let scoreId = '';
-let scorePagesSum = 0;
+export let scoreId = '';
+export let scorePagesSum = 0;
 let latestProgressMessage = null;
+let isTokenAlgorithmAvailable = true;
 let pdfFile = null;
 
-const setScoreProps = () => {
+const setScoreProps = async () => {
+  isOnMobile = window.innerWidth < 960;
   const scripts = document.querySelectorAll('script[type="application/ld+json"]');
 
   for (const script of scripts) {
@@ -48,6 +53,8 @@ const setScoreProps = () => {
     setScoreId();
   if (!scorePagesSum)
     setScorePagesSum();
+
+  isInitFunctionOver = true;
 };
 
 const setFirstImage = () => {
@@ -110,47 +117,6 @@ const setScorePagesSum = () => {
   }
 };
 
-browser.runtime.onMessage.addListener((request, sender, sendResponse) => {
-  if (request === 'isScorePage') {
-    sendResponse(isScoreIdValid(scoreId));
-    return;
-  }
-
-  if (request === 'getLatestMessage') {
-    sendResponse(latestProgressMessage);
-    return;
-  }
-
-  if (request === 'hardStop') {
-    abortController.abort();
-    latestProgressMessage = null;
-    sendResponse(true);
-    return;
-  }
-
-  if (typeof request === 'object' && request.scoreData) {
-    allTokens[request.scoreData[0]] = request.scoreData[1];
-    return;
-  }
-
-  if (typeof request !== 'string' || request.length === 0)
-    return;
-
-  abortController = new AbortController();
-
-
-  switch (request) {
-    case 'openSheet':
-      return new Promise(openSheet);
-    case 'downloadSheet':
-      return new Promise(downloadSheet);
-    case 'downloadAudio':
-      return new Promise(downloadAudio);
-    case 'downloadMidi':
-      return new Promise(downloadMidi);
-  }
-});
-
 const isScoreIdValid = scoreId => {
   return /^\d{7}$/.test(scoreId);
 };
@@ -159,14 +125,30 @@ const openSheet = async (resolve, reject) => {
   abortController.signal.addEventListener('abort', reject);
 
   if (pdfFile) {
-    await sendMessageToPopup('PDF successfully generated', false, true);
-    resolve(pdfFile.open());
+    await sendMessageToPopup('Opening PDF file', true);
+
+    pdfFile.getBlob(async blob => {
+      const blobUrl = URL.createObjectURL(blob);
+      // window.open(blobUrl, isOnMobile ? '_self' : '_blank');
+      window.open(blobUrl, '_blank');
+
+      await sendMessageToPopup('PDF successfully generated', false, true);
+      resolve();
+    });
   } else {
-    await pdfBuild();
+    await buildPdf();
 
     if (pdfFile) {
-      await sendMessageToPopup('PDF successfully generated', false, true);
-      resolve(pdfFile.open());
+      await sendMessageToPopup('Opening PDF file', true);
+
+      pdfFile.getBlob(async blob => {
+        const blobUrl = URL.createObjectURL(blob);
+        // window.open(blobUrl, isOnMobile ? '_self' : '_blank');
+        window.open(blobUrl, '_blank');
+
+        await sendMessageToPopup('PDF successfully generated', false, true);
+        resolve();
+      });
     }
   }
 };
@@ -176,140 +158,93 @@ const downloadSheet = async (resolve, reject) => {
 
   if (pdfFile) {
     await sendMessageToPopup('PDF successfully generated', false, true);
-    pdfFile.download(scoreName + '.pdf');
+    resolve(pdfFile.download(scoreName + '.pdf'));
   } else {
-    await pdfBuild();
+    await buildPdf();
 
     if (pdfFile) {
       await sendMessageToPopup('PDF successfully generated', false, true);
-      pdfFile.download(scoreName + '.pdf');
+      resolve(pdfFile.download(scoreName + '.pdf'));
     }
   }
 };
 
-const pdfBuild = async (attempt = 0) => {
-  await sendMessageToPopup('Retrieving media links', true);
+const downloadAudio = async (resolve, reject) => {
+  abortController.signal.addEventListener('abort', reject);
 
-  const tokensToFetch = [];
-  const sheetImages = [];
-
-  for (let i = 1; i < scorePagesSum; i++) {
-    if (abortController.signal.aborted)
-      return;
-
-    if (allTokens[`${scoreId}_img_${i}`]) {
-      tokensToFetch.push({
-        index: i,
-        token: allTokens[`${scoreId}_img_${i}`]
-      });
-    } else {
-      if (attempt > 3) {
-        await sendMessageToPopup('Failed to download score images');
-        return;
-      }
-
-      await loadImagesDiv();
-
-      if (!isAllImageTokensSet() && attempt > 0)
-        await loadImagesIframe();
-
-      return pdfBuild(attempt + 1);
-    }
-  }
+  await sendMessageToPopup('Retrieving audio link', true);
+  const url = await getMediaUrl('mp3');
 
   if (abortController.signal.aborted)
-    return;
+    return reject();
 
-  await sendMessageToPopup(`Retrieving page 1/${scorePagesSum}`, true);
-
-  let data = await fetchImageUrl(firstImage);
-  sheetImages.push(data);
-
-  if (tokensToFetch.length > 0) {
-    for (let i = 0; i < tokensToFetch.length; i++) {
-      if (abortController.signal.aborted)
-        return;
-
-      await sendMessageToPopup(`Retrieving page ${i + 2}/${scorePagesSum}`, true);
-
-      let url = await fetchApiUrl('img', tokensToFetch[i].token, tokensToFetch[i].index);
-      let data = await fetchImageUrl(url);
-      sheetImages.push(data);
-    }
+  if (url) {
+    await sendMessageToPopup('Downloading audio', true);
+    downloadFile(url);
+    await sendMessageToPopup('Audio successfully downloaded', false, true);
+    resolve();
+  } else {
+    await sendMessageToPopup('Failed to download audio');
+    reject();
   }
-
-  await sendMessageToPopup('Generating PDF', true);
-  await generatePDF(sheetImages);
 };
 
-const downloadAudio = async (resolve, reject, attempt = 0) => {
-  if (attempt === 0)
-    abortController.signal.addEventListener('abort', reject);
+const downloadMidi = async (resolve, reject) => {
+  abortController.signal.addEventListener('abort', reject);
+
+  await sendMessageToPopup('Retrieving midi link', true);
+  const url = await getMediaUrl('midi');
+
   if (abortController.signal.aborted)
-    return;
+    return reject();
 
-  if (allTokens[`${scoreId}_mp3_0`]) {
-    await sendMessageToPopup('Retrieving audio link', true);
-    const dataUrl = await fetchApiUrl('mp3', allTokens[`${scoreId}_mp3_0`]);
-    await sendMessageToPopup('Downloading link', true);
-
-    downloadFile(dataUrl);
-    return sendMessageToPopup('Audio downloaded successfully', false, true);
+  if (url) {
+    await sendMessageToPopup('Downloading midi', true);
+    downloadFile(url);
+    await sendMessageToPopup('Midi successfully downloaded', false, true);
+    resolve();
+  } else {
+    await sendMessageToPopup('Failed to download midi');
+    reject();
   }
-
-  if (attempt > 2)
-    return sendMessageToPopup('Failed to download audio');
-
-  await sendMessageToPopup('Loading data', true);
-  await loadMp3Data();
-  return downloadAudio(resolve, reject, attempt + 1);
-};
-
-const downloadMidi = async (resolve, reject, attempt = 0) => {
-  if (attempt === 0)
-    abortController.signal.addEventListener('abort', reject);
-  if (abortController.signal.aborted)
-    return;
-
-  if (allTokens[`${scoreId}_midi_0`]) {
-    await sendMessageToPopup('Retrieving midi link', true);
-    const dataUrl = await fetchApiUrl('midi', allTokens[`${scoreId}_midi_0`]);
-    await sendMessageToPopup('Downloading link', true);
-
-    downloadFile(dataUrl);
-    return sendMessageToPopup('Midi downloaded successfully', false, true);
-  }
-
-  if (attempt > 2)
-    return sendMessageToPopup('Failed to download midi');
-
-  await sendMessageToPopup('Loading data', true);
-
-  if (!await loadMidiDataWithClick())
-    await loadMidiDataWithIframe();
-
-  return downloadMidi(resolve, reject, attempt + 1);
 };
 
 const sendMessageToPopup = async (message, loading = false, reset = false) => {
   latestProgressMessage = loading ? {message, loading} : null;
-  await browser.runtime.sendMessage({message, loading, reset}).catch(() => null);
+
+  browser.runtime.sendMessage({message, loading, reset}).catch(() => null);
+
+  if (isOnMobile)
+    showMobilePopupMessage(message, loading);
 };
 
-const fetchApiUrl = async (type, token, index = 0) => {
-  return await fetch(
-    `https://musescore.com/api/jmuse?id=${scoreId}&index=${index}&type=${type}`,
-    {headers: {authorization: token}}
-  )
-    .then(res => res.json())
-    .then(res => res.info.url);
+const getMediaUrl = async (type, index) => {
+  if (abortController.signal.aborted)
+    return;
+
+  if (isTokenAlgorithmAvailable) {
+    const url = await promiseTimeout(getMediaUrlWithAlgorithm(scoreId, type, index), 1000)
+      .catch();
+
+    if (url)
+      return url;
+
+    isTokenAlgorithmAvailable = false;
+  }
+
+  if (abortController.signal.aborted)
+    return;
+
+  return await getMediaUrlWithScrape(scoreId, type, index);
 };
 
 const fetchImageUrl = async url => {
   return await fetch(url)
     .then(res => res.blob())
     .then(async blob => {
-      if (blob.type === 'image/svg+xml') {
+      if (blob.type === 'application/xml') {
+        return false;
+      } else if (blob.type === 'image/svg+xml') {
         return blob.text();
       } else {
         return new Promise((resolve, reject) => {
@@ -320,6 +255,39 @@ const fetchImageUrl = async url => {
         });
       }
     });
+};
+
+const buildPdf = async () => {
+  if (abortController.signal.aborted)
+    return;
+
+  await sendMessageToPopup('Retrieving media links', true);
+
+  await sendMessageToPopup(`Retrieving page 1/${scorePagesSum}`, true);
+  const sheetImages = [await fetchImageUrl(firstImage)];
+
+  if (scorePagesSum > 1) {
+    for (let i = 0; i < scorePagesSum - 1; i++) {
+      if (abortController.signal.aborted)
+        return;
+
+      await sendMessageToPopup(`Retrieving page ${i + 2}/${scorePagesSum}`, true);
+
+      const img = await fetchImageUrl(await getMediaUrl('img', i + 1));
+
+      if (img) {
+        sheetImages.push(img);
+      } else {
+        break;
+      }
+    }
+  }
+
+  if (abortController.signal.aborted)
+    return;
+
+  await sendMessageToPopup('Generating PDF file', true);
+  await generatePDF(sheetImages);
 };
 
 const generatePDF = async (pages = []) => {
@@ -400,106 +368,84 @@ const downloadFile = url => {
   window.location.assign(url);
 };
 
-const isAllImageTokensSet = () => {
-  for (let i = 1; i < scorePagesSum; i++) {
-    if (!allTokens[`${scoreId}_img_${i}`])
-      return false;
-  }
+const showMobilePopupMessage = (message, loading) => {
+  const wrapperDiv = document.querySelector('.msd-content__wrapper');
 
-  return true;
-};
+  if (wrapperDiv) {
+    document.querySelector('.msd-message__text').textContent = message;
+    document.querySelector('.msd-btn__fun.msd-btn__single').textContent = loading ? 'Stop' : 'Close';
+  } else {
+    const messageDocument = `
+      <div class='msd-content__wrapper'>
+        <div class='msd-content'>
+          <div class='msd-message__div'>
+            <p class='msd-message__text'>${message}</p>
+            <div class='msd-fun__content'>
+              <button class='msd-btn__fun msd-btn__single'>${loading ? 'Stop' : 'Close'}</button>
+            </div>
+          </div>
+        </div>
+      </div>`;
 
-const loadMp3Data = async () => {
-  document.querySelector('button[title="Toggle Play"]')?.click();
-  await delay(50);
-  document.querySelector('button[title="Toggle Play"]')?.click();
-}
+    document.body.innerHTML += messageDocument;
 
-const loadMidiDataWithIframe = async () => {
-  const ifr = document.createElement('iframe');
+    const actionButton = document.querySelector('.msd-btn__fun.msd-btn__single');
 
-  ifr.src = window.location.href + '/piano-tutorial';
-  ifr.style.width = '0px';
-  ifr.style.height = '0px';
-  ifr.style.position = 'fixed';
-  document.body.appendChild(ifr);
-
-  await new Promise((resolve) => {
-    if (ifr.complete && ifr.readyState === 'complete') {
-      resolve();
-      return;
-    }
-
-    ifr.addEventListener('load', () => resolve());
-  });
-};
-
-const loadMidiDataWithClick = async () => {
-  const button = document.querySelector('path[d^="M2 3.875V20"]')?.parentElement?.parentElement;
-
-  if (!button)
-    return false;
-
-  button.click();
-
-  const isMidiPartLoaded = await new Promise(resolve => {
-    if (window.location.pathname.endsWith('/piano-tutorial')) {
-      resolve(true);
-    }
-
-    const interval = setInterval(() => {
-      if (window.location.pathname.endsWith('/piano-tutorial')) {
-        clearInterval(interval);
-        resolve(true);
+    actionButton.addEventListener('click', () => {
+      if (loading) {
+        abortController.abort();
+        latestProgressMessage = null;
       }
-    }, 50);
 
+      document.querySelector('.msd-content__wrapper')?.remove();
+    });
+  }
+
+  if (!loading) {
     setTimeout(() => {
-      clearInterval(interval);
-      resolve(false);
-    }, 2000);
-  });
-
-  if (isMidiPartLoaded) {
-    button.click();
-    return true;
+      document.querySelector('.msd-content__wrapper')?.remove();
+    }, 5000);
   }
-
-  return false;
 };
 
-const loadImagesDiv = async () => {
-  const imgDiv = document.querySelector('#jmuse-scroller-component')?.parentElement;
-
-  if (imgDiv) {
-    document.body.style.overflow = 'hidden';
-    imgDiv.style.height = '200000px';
-    await delay(50);
-    imgDiv.style.height = 'auto';
-
-    return true;
+browser.runtime.onMessage.addListener((request, sender, sendResponse) => {
+  if (request === 'isConnectionOk') {
+    sendResponse(isInitFunctionOver);
+    return;
   }
-  return false;
-};
 
-const loadImagesIframe = async () => {
-  const ifr = document.createElement('iframe');
+  if (request === 'isScorePage') {
+    sendResponse(isScoreIdValid(scoreId));
+    return;
+  }
 
-  ifr.src = window.location.href;
-  ifr.style.width = '1000px';
-  ifr.style.height = '300000px';
-  ifr.style.position = 'fixed';
-  document.body.appendChild(ifr);
+  if (request === 'getLatestMessage') {
+    sendResponse({latestProgressMessage, isOnMobile});
+    return;
+  }
 
-  await new Promise(resolve => {
-    if (ifr.complete && ifr.readyState === 'complete') {
-      resolve();
-      return;
+  if (request === 'hardStop') {
+    abortController.abort();
+    latestProgressMessage = null;
+    sendResponse(true);
+    return;
+  }
+
+  if (typeof request === 'string') {
+    abortController = new AbortController();
+
+    switch (request) {
+      case 'openSheet':
+        return new Promise(openSheet);
+      case 'downloadSheet':
+        return new Promise(downloadSheet);
+      case 'downloadAudio':
+        return new Promise(downloadAudio);
+      case 'downloadMidi':
+        return new Promise(downloadMidi);
     }
-
-    ifr.addEventListener('load', resolve);
-  });
-};
+  }
+});
 
 if (window)
   window.addEventListener('load', setScoreProps);

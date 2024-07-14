@@ -13,6 +13,9 @@ module.exports = {
     rules: [
       {
         test: /\.css$/i,
+        generator: {
+          filename: '[name][ext]',
+        },
         use: [
           {
             loader: 'style-loader',
@@ -26,9 +29,12 @@ module.exports = {
         ],
       },
       {
-        test: /\.(png|jpg|jpeg|gif|woff|woff2|tff|eot|svg)$/,
+        test: /\.(png|jpg|jpeg|gif|woff|ttf|woff2|eot|svg)$/,
         type: 'asset/resource',
         exclude: /node_modules/,
+        generator: {
+          filename: '[name][ext]',
+        },
       },
       {
         test: /\.(js|jsx)$/,
@@ -48,7 +54,7 @@ module.exports = {
     ]
   },
   plugins: [
-    new CleanWebpackPlugin({ verbose: false }),
+    new CleanWebpackPlugin({verbose: false}),
     new CopyPlugin({
       patterns: [{
         from: path.resolve('src/manifest.json'),
@@ -73,6 +79,33 @@ module.exports = {
         },
       ],
     }),
+    new CopyPlugin({
+      patterns: [
+        {
+          from: 'src/sandbox',
+          to: path.join(__dirname, 'dist'),
+          force: true,
+        },
+      ],
+    }),
+    new CopyPlugin({
+      patterns: [
+        {
+          from: 'src/assets/fonts/FiraSans.css',
+          to: path.join(__dirname, 'dist'),
+          force: true,
+        },
+      ],
+    }),
+    new CopyPlugin({
+      patterns: [
+        {
+          from: 'src/content/content.css',
+          to: path.join(__dirname, 'dist'),
+          force: true,
+        },
+      ],
+    }),
     new HtmlPlugin({
       template: path.join(__dirname, 'src/popup/index.html'),
       filename: 'popup.html',
@@ -90,6 +123,7 @@ module.exports = {
     filename: '[name].js',
     path: path.join(__dirname, 'dist'),
     clean: true,
+    publicPath: '',
   },
   devtool: false
 };

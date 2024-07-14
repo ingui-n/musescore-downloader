@@ -1,6 +1,5 @@
 import React, {useEffect, useRef, useState} from 'react';
 import browser from 'webextension-polyfill';
-import './popup.css';
 import {
   delay,
   isConnectionOk,
@@ -14,23 +13,27 @@ import {
 export default function Popup() {
   const [showContent, setShowContent] = useState(false);
   const [currentTab, setCurrentTab] = useState(null);
+  const [isOnMobile, setIsOnMobile] = useState(false);
   const [showSingleBtb, setShowSingleBtb] = useState(false);
   const [singleBtbText, setSingleBtbText] = useState('');
   const [messageState, setMessageState] = useState({message: 'Loading extension', loading: false});
   const loadingRef = useRef(null);
 
   useEffect(() => {
-    browser.runtime.onMessage.addListener(async request => {
+    browser.runtime.onMessage.addListener(request => {
       if (typeof request !== 'object')
         return;
 
       if (request.message) {
         showMessage(request.loading ? {...request, btnText: 'Stop', showBtn: true} : request);
-      }
-      if (request.reset) {
-        await delay(750);
-        setShowContent(true);
-        resetBgColorAnimation();
+
+        if (request.reset) {
+          (async () => {
+            await delay(750);
+            setShowContent(true);
+            resetBgColorAnimation();
+          })();
+        }
       }
     });
 
@@ -80,14 +83,15 @@ export default function Popup() {
 
     if (!isScoreUrl(currentTab.url)) {
       const isScorePage = await browser.tabs.sendMessage(currentTab.id, 'isScorePage');
-
       if (!isScorePage) {
         showMessage({message: 'Cannot detect a score'});
         return;
       }
     }
 
-    const latestProgressMessage = await browser.tabs.sendMessage(currentTab.id, 'getLatestMessage');
+    const {latestProgressMessage, isOnMobile} = await browser.tabs.sendMessage(currentTab.id, 'getLatestMessage');
+
+    setIsOnMobile(isOnMobile);
 
     if (latestProgressMessage) {
       showMessage({...latestProgressMessage, showBtn: true, btnText: 'Stop'});
@@ -115,6 +119,9 @@ export default function Popup() {
     showMessage({message: 'Sending request', loading: true});
 
     try {
+      if (isOnMobile)
+        window.close();
+
       await browser.tabs.sendMessage(currentTab.id, type);
     } catch (e) {
     }
@@ -153,24 +160,24 @@ export default function Popup() {
             <div>
               <button
                 onClick={() => requestMedia('openSheet')}
-                className='btn__fun sheet__open'
+                className='btn__fun'
               >Open Sheet
               </button>
               <button
                 onClick={() => requestMedia('downloadSheet')}
-                className='btn__fun sheet__download'
+                className='btn__fun'
               >Download Sheet
               </button>
             </div>
             <div>
               <button
                 onClick={() => requestMedia('downloadAudio')}
-                className='btn__fun audio__download'
+                className='btn__fun'
               >Download Audio
               </button>
               <button
                 onClick={() => requestMedia('downloadMidi')}
-                className='btn__fun midi__download'
+                className='btn__fun'
               >Download Midi
               </button>
             </div>

@@ -1,5 +1,5 @@
 {
-  "manifest_version": 3,
+  "manifest_version": 2,
   "name": "Music Score Downloader",
   "description": "Extension allowing you to download music sheets, audio and midi files for free",
   "version": "0.5.7",
@@ -11,17 +11,18 @@
   },
   "permissions": [
     "webRequest",
-    "storage"
-  ],
-  "host_permissions": [
+    "storage",
     "https://musescore.com/*",
     "https://s3.ultimate-guitar.com/musescore.scoredata/g/*"
   ],
-  "action": {
+  "browser_action": {
     "default_popup": "popup.html"
   },
   "background": {
-    "service_worker": "background.js"
+    "scripts": [
+      "background.js"
+    ],
+    "persistent": true
   },
   "content_scripts": [
     {
@@ -37,20 +38,9 @@
       "run_at": "document_start"
     }
   ],
-  "sandbox": {
-    "pages": [
-      "sandbox.html"
-    ]
-  },
   "web_accessible_resources": [
-    {
-      "resources": [
-        "content.css",
-        "sandbox.html"
-      ],
-      "matches": [
-        "https://musescore.com/*"
-      ]
-    }
-  ]
+    "content.css",
+    "sandbox.html"
+  ],
+  "content_security_policy": "script-src 'self' 'unsafe-eval'; object-src 'self'"
 }

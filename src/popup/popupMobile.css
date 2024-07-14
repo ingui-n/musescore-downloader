@@ -1,8 +1,8 @@
 @import "../assets/fonts/FiraSans.css";
 
 :root {
-  --html-width: 280px;
-  --html-height: 185px;
+  --html-width: 100vw;
+  --html-height: 100vh;
   --color-animation: background-migration 3s ease alternate infinite;
   --color-background: linear-gradient(60deg, #f79533, #f37055, #ef4e7b, #a166ab, #5073b8, #1098ad, #07b39b, #6fba82);
 }
@@ -26,12 +26,11 @@ html:after {
 }
 
 body {
-  overflow: hidden;
   display: flex;
   flex-direction: column;
   align-items: center;
-  width: calc(var(--html-width) - 4px);
-  height: calc(var(--html-height) - 4px);
+  width: calc(-4px + var(--html-width));
+  height: calc(-4px + var(--html-height));
   background: #1D1F20;
   position: relative;
   left: 2px;
@@ -60,6 +59,11 @@ button {
   }
 }
 
+.content {
+  width: 100vw;
+  height: 100vh;
+}
+
 .header__div {
   display: flex;
   justify-content: center;
@@ -70,7 +74,7 @@ button {
 
 .header__title {
   margin: -1.6px 0 0;
-  font-size: 25px;
+  font-size: 7vw;
   font-weight: 500;
   color: white;
   background: var(--color-background);
@@ -87,13 +91,13 @@ button {
 }
 
 .btn__fun {
-  width: 117px;
-  padding-top: 7px;
-  padding-bottom: 7px;
+  width: 25vw;
+  padding-top: 20px;
+  padding-bottom: 20px;
   text-decoration: none;
   display: inline-block;
-  font-size: 14px;
-  margin: 7px;
+  font-size: 3vw;
+  margin: 2vw;
   transition-duration: .5s;
   cursor: pointer;
   border: transparent;
@@ -104,8 +108,8 @@ button {
 .btn__fun:before {
   content: '';
   position: absolute;
-  height: 35px;
-  width: 121px;
+  height: calc(100% + 4px);
+  width: calc(25vw + 4px);
   left: -2px;
   top: -2px;
   background: var(--color-background);
@@ -133,8 +137,7 @@ button {
 
 .message__text, .message__loading {
   margin: 0;
-  font-size: 17px;
-  max-width: 230px;
+  font-size: 4vw;
   text-align: center;
   background: var(--color-background);
   animation: var(--color-animation);
