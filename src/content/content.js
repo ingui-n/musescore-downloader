@@ -85,8 +85,10 @@ const setScoreComposer = () => {
 
 const setScoreId = () => {
   const url =
-    document.querySelector('meta[property="og:url"]')?.content
-    ?? document.querySelector('meta[property^="twitter:app:url"]')?.content;
+    document.querySelector('meta[property="al:android:url"]')?.content
+    ?? document.querySelector('meta[property="al:ios:url"]')?.content
+    ?? document.querySelector('meta[property^="twitter:app:url"]')?.content
+    ?? document.querySelector('meta[property="og:url"]')?.content;
 
   if (url)
     scoreId = url.split('/').pop();
@@ -118,7 +120,8 @@ const setScorePagesSum = () => {
 };
 
 const isScoreIdValid = scoreId => {
-  return /^\d{7}$/.test(scoreId);
+  return !!scoreId && Number(scoreId) > 0;
+  // return /^\d{7}$/.test(scoreId);
 };
 
 const openSheet = async (resolve, reject) => {
@@ -223,13 +226,15 @@ const getMediaUrl = async (type, index) => {
     return;
 
   if (isTokenAlgorithmAvailable) {
-    const url = await promiseTimeout(getMediaUrlWithAlgorithm(scoreId, type, index), 1000)
-      .catch();
+    try {
+      const url = await promiseTimeout(getMediaUrlWithAlgorithm(scoreId, type, index), 1000)
+        .catch();
 
-    if (url)
-      return url;
-
-    isTokenAlgorithmAvailable = false;
+      if (url)
+        return url;
+    } catch (e) {
+      isTokenAlgorithmAvailable = false;
+    }
   }
 
   if (abortController.signal.aborted)

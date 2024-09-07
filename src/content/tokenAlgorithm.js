@@ -83,6 +83,9 @@ const updateTokenAlgorithm = async url => {
 
   const randomToken = script.match(/"([\W\w]{1,50})"\)\.substr\(0, *4\)/)?.[1];
 
+  if (!randomToken)
+    return false;
+
   let scriptParts = script.split(/, *(\d+): *(?:function)*\([\w,]{1,8}\)(?: *=> *|)\{/);
   let functionNumber;
 
