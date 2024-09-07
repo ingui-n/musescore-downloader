@@ -49,7 +49,7 @@ const scrapeMidiData = async () => {
 
     button.click();
 
-    const isMidiPartLoaded = await new Promise((resolve, reject) => {
+    const isMidiPartLoaded = await new Promise(resolve => {
       if (window.location.pathname.endsWith('/piano-tutorial')) {
         resolve(true);
       }
@@ -61,7 +61,7 @@ const scrapeMidiData = async () => {
       }, 50);
 
       setTimeout(() => {
-        reject(false);
+        resolve(false);
       }, 2000);
     });
 
