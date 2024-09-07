@@ -160,24 +160,24 @@ export default function Popup() {
             <div>
               <button
                 onClick={() => requestMedia('openSheet')}
-                className='btn__fun'
+                className='btn__fun sheet__open'
               >Open Sheet
               </button>
               <button
                 onClick={() => requestMedia('downloadSheet')}
-                className='btn__fun'
+                className='btn__fun sheet__download'
               >Download Sheet
               </button>
             </div>
             <div>
               <button
                 onClick={() => requestMedia('downloadAudio')}
-                className='btn__fun'
+                className='btn__fun audio__download'
               >Download Audio
               </button>
               <button
                 onClick={() => requestMedia('downloadMidi')}
-                className='btn__fun'
+                className='btn__fun midi__download'
               >Download Midi
               </button>
             </div>
