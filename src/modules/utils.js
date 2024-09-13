@@ -87,3 +87,7 @@ export const promiseTimeout = async (promise, time) => {
     new Promise((_, reject) => setTimeout(() => reject('F'), time))
   ]);
 };
+
+export const capitalizeFirstLetter = string => {
+  return string.charAt(0).toUpperCase() + string.slice(1);
+};
