@@ -34,10 +34,39 @@ export const getMediaUrlWithScrape = async (scoreId, type, index = 0, round = 0)
 };
 
 const scrapeMp3Data = async () => {
-  document.querySelector('button[title="Toggle Play"]')?.click();
-  await delay(100);
-  document.querySelector('button[title="Toggle Play"]')?.click();
-  await delay(100);
+  const scrapeMp3DataWithClick = async () => {
+    if (!document.querySelector('button[title="Toggle Play"]'))
+      return false;
+
+    document.querySelector('button[title="Toggle Play"]')?.click();
+    await delay(100);
+    document.querySelector('button[title="Toggle Play"]')?.click();
+    await delay(100);
+
+    return true;
+  };
+
+  const scrapeMp3DataWithIframe = async () => {
+    const ifr = document.createElement('iframe');
+
+    ifr.src = window.location.href + '/piano-tutorial';
+    ifr.style.width = '0';
+    ifr.style.height = '0';
+    ifr.style.position = 'fixed';
+    document.body.appendChild(ifr);
+
+    await new Promise((resolve) => {
+      if (ifr.complete && ifr.readyState === 'complete') {
+        resolve();
+      }
+
+      ifr.addEventListener('load', resolve);
+    });
+  };
+
+  if (!await scrapeMp3DataWithClick()) {
+    await scrapeMp3DataWithIframe();
+  }
 };
 
 const scrapeMidiData = async () => {
