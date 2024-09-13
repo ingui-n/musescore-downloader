@@ -2,7 +2,7 @@ import browser from 'webextension-polyfill';
 import Printer from "pdfmake";
 import {getMediaUrlWithAlgorithm} from "./tokenAlgorithm";
 import {getMediaUrlWithScrape} from "./scrape";
-import {promiseTimeout} from "../modules/utils";
+import {capitalizeFirstLetter, promiseTimeout} from "../modules/utils";
 
 let abortController;
 
@@ -183,8 +183,7 @@ const downloadAudio = async (resolve, reject) => {
 
   if (url) {
     await sendMessageToPopup('Downloading audio', true);
-    downloadFile(url);
-    await sendMessageToPopup('Audio successfully downloaded', false, true);
+    await downloadFile(url, 'audio');
     resolve();
   } else {
     await sendMessageToPopup('Failed to download audio');
@@ -203,7 +202,7 @@ const downloadMidi = async (resolve, reject) => {
 
   if (url) {
     await sendMessageToPopup('Downloading midi', true);
-    downloadFile(url);
+    await downloadFile(url, 'midi');
     await sendMessageToPopup('Midi successfully downloaded', false, true);
     resolve();
   } else {
@@ -368,9 +367,40 @@ const getImageSize = async image => {
   }
 };
 
-const downloadFile = url => {
+const downloadFile = async (url, type) => {
   // window.open(url);
-  window.location.assign(url);
+  // window.location.assign(url);
+
+  const fileTypes = {
+    audio: 'mp3',
+    midi: 'mid'
+  };
+
+  try {
+    const res = await fetch(url);
+
+    if (!res.ok) {
+      await sendMessageToPopup('Cannot download file', false, true);
+      window.open(url);
+      return;
+    }
+
+    const blob = await res.blob();
+    const blobUrl = window.URL.createObjectURL(blob);
+
+    const link = document.createElement('a');
+    link.href = blobUrl;
+    link.setAttribute('download', `${scoreName}.${fileTypes[type]}`);
+
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    await sendMessageToPopup(`${capitalizeFirstLetter(type)} successfully downloaded`, false, true);
+  } catch (e) {
+    await sendMessageToPopup('Cannot download file', false, true);
+    window.open(url);
+  }
 };
 
 const showMobilePopupMessage = (message, loading) => {
