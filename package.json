@@ -1,6 +1,6 @@
 {
   "name": "musescore-downloader",
-  "version": "0.5.8",
+  "version": "0.5.9",
   "description": "Browser extension allowing to download music sheets, audio and midi files for free",
   "repository": {
     "type": "git",
