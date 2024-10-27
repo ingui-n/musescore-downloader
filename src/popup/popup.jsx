@@ -32,7 +32,7 @@ export default function Popup() {
             setTimeout(() => {
               setShowContent(true);
               setTimeout(resetBgColorAnimation, 20);
-            }, 750);
+            }, 1250);
           })();
         }
       }
