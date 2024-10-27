@@ -392,11 +392,14 @@ const downloadFile = async (url, type) => {
 
     const link = document.createElement('a');
     link.href = blobUrl;
-    link.setAttribute('download', `${scoreName}.${fileTypes[type]}`);
+    link.setAttribute('download', `${scoreComposer} - ${scoreName}.${fileTypes[type]}`);
 
-    document.body.appendChild(link);
+    const blockingModal = document.querySelector('div[aria-modal="true"]');
+    const pageElement = blockingModal || document.body;
+
+    pageElement.appendChild(link);
     link.click();
-    document.body.removeChild(link);
+    pageElement.removeChild(link);
 
     await sendMessageToPopup(`${capitalizeFirstLetter(type)} successfully downloaded`, false, true);
   } catch (e) {
