@@ -161,13 +161,13 @@ const downloadSheet = async (resolve, reject) => {
 
   if (pdfFile) {
     await sendMessageToPopup('PDF successfully generated', false, true);
-    resolve(pdfFile.download(scoreName + '.pdf'));
+    resolve(pdfFile.download(`${scoreComposer ? scoreComposer + ' - ' : ''}${scoreName}.pdf`));
   } else {
     await buildPdf();
 
     if (pdfFile) {
       await sendMessageToPopup('PDF successfully generated', false, true);
-      resolve(pdfFile.download(scoreName + '.pdf'));
+      resolve(pdfFile.download(`${scoreComposer ? scoreComposer + ' - ' : ''}${scoreName}.pdf`));
     }
   }
 };
