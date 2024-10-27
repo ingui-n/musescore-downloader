@@ -246,7 +246,7 @@ const fetchImageUrl = async url => {
     .then(res => res.blob())
     .then(async blob => {
       if (blob.type === 'application/xml') {
-        return false;
+        return '';
       } else if (blob.type === 'image/svg+xml') {
         return blob.text();
       } else {
@@ -255,9 +255,10 @@ const fetchImageUrl = async url => {
           reader.onloadend = () => resolve(reader.result);
           reader.onerror = reject;
           reader.readAsDataURL(blob);
-        });
+        }) || '';
       }
-    });
+    })
+    .catch(() => '');
 };
 
 const buildPdf = async () => {
@@ -267,7 +268,13 @@ const buildPdf = async () => {
   await sendMessageToPopup('Retrieving media links', true);
 
   await sendMessageToPopup(`Retrieving page 1/${scorePagesSum}`, true);
-  const sheetImages = [await fetchImageUrl(firstImage)];
+
+  let firstPage = await fetchImageUrl(firstImage);
+
+  if (/^data:text\/html/.test(firstPage))
+    firstPage = await fetchImageUrl(firstImage.replace('.svg', '.png'));
+
+  const sheetImages = [firstPage];
 
   if (scorePagesSum > 1) {
     for (let i = 0; i < scorePagesSum - 1; i++) {
