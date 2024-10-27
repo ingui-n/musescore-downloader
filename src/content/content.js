@@ -32,9 +32,9 @@ const setScoreProps = async () => {
       if (obj?.thumbnailUrl)
         firstImage = obj.thumbnailUrl;
       if (obj?.composer?.name)
-        scoreComposer = obj.composer.name.replaceAll('\n', ' ');
+        scoreComposer = obj.composer.name.trim();
       if (obj?.name)
-        scoreName = obj.name;
+        scoreName = obj.name.trim();
       if (obj?.url) {
         scoreId = obj.url.split('/').pop();
         scoreUrl = obj.url;
@@ -76,11 +76,11 @@ const setFirstImage = () => {
 };
 
 const setScoreName = () => {
-  scoreName = document.querySelector('meta[property="og:title"]')?.content;
+  scoreName = document.querySelector('meta[property="og:title"]')?.content.trim();
 };
 
 const setScoreComposer = () => {
-  scoreComposer = document.querySelector('meta[property="musescore:composer"]')?.content?.replaceAll('\n', ' ');
+  scoreComposer = document.querySelector('meta[property="musescore:composer"]')?.content?.trim();
 };
 
 const setScoreId = () => {
