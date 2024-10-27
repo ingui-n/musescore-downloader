@@ -320,7 +320,9 @@ const generatePDF = async (pages = []) => {
         let svg = new DOMParser().parseFromString(page, "image/svg+xml");
         let {width, height} = await getImageSize(page);
 
-        svg.firstChild.setAttribute('viewBox', `0 0 ${width} ${height}`);
+        if (!svg.firstChild.getAttribute('viewBox'))
+          svg.firstChild.setAttribute('viewBox', `0 0 ${width} ${height}`);
+
         let svgString = new XMLSerializer().serializeToString(svg);
 
         docContent.push({svg: svgString, ...size, alignment: 'center'});
