@@ -1,7 +1,7 @@
 import React, {useEffect, useRef, useState} from 'react';
 import browser from 'webextension-polyfill';
 import {
-  delay,
+  getTabByUrl,
   isConnectionOk,
   isMuseScoreUrl,
   isScoreUrl,
@@ -29,9 +29,10 @@ export default function Popup() {
 
         if (request.reset) {
           (async () => {
-            await delay(750);
-            setShowContent(true);
-            resetBgColorAnimation();
+            setTimeout(() => {
+              setShowContent(true);
+              resetBgColorAnimation();
+            }, 750);
           })();
         }
       }
@@ -49,7 +50,7 @@ export default function Popup() {
       const tabListenerHandler = async (tabId, changeInfo) => {
         if (tabId === curr.id && changeInfo.status === 'complete') {
           browser.tabs.onUpdated.removeListener(tabListenerHandler);
-          setCurrentTab(await updateCurrentTab());
+          setCurrentTab(await getTabByUrl(curr.url));
         }
       };
 

@@ -7,6 +7,11 @@ export const updateCurrentTab = async () => {
   return tab;
 };
 
+export const getTabByUrl = async url => {
+  const [tab] = await browser.tabs.query({url});
+  return tab;
+};
+
 export const isConnectionOk = async tabId => {
   try {
     return !!(await browser.tabs.sendMessage(tabId, 'isConnectionOk'));
