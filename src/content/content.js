@@ -203,7 +203,6 @@ const downloadMidi = async (resolve, reject) => {
   if (url) {
     await sendMessageToPopup('Downloading midi', true);
     await downloadFile(url, 'midi');
-    await sendMessageToPopup('Midi successfully downloaded', false, true);
     resolve();
   } else {
     await sendMessageToPopup('Failed to download midi');
@@ -383,7 +382,7 @@ const downloadFile = async (url, type) => {
 
     if (!res.ok) {
       await sendMessageToPopup('Cannot download file', false, true);
-      window.open(url);
+      // window.open(url);
       return;
     }
 
@@ -392,7 +391,7 @@ const downloadFile = async (url, type) => {
 
     const link = document.createElement('a');
     link.href = blobUrl;
-    link.setAttribute('download', `${scoreComposer} - ${scoreName}.${fileTypes[type]}`);
+    link.setAttribute('download', `${scoreComposer ? scoreComposer + ' - ' : ''}${scoreName}.${fileTypes[type]}`);
 
     const blockingModal = document.querySelector('div[aria-modal="true"]');
     const pageElement = blockingModal || document.body;
@@ -404,7 +403,7 @@ const downloadFile = async (url, type) => {
     await sendMessageToPopup(`${capitalizeFirstLetter(type)} successfully downloaded`, false, true);
   } catch (e) {
     await sendMessageToPopup('Cannot download file', false, true);
-    window.open(url);
+    // window.open(url);
   }
 };
 
