@@ -31,7 +31,7 @@ export default function Popup() {
           (async () => {
             setTimeout(() => {
               setShowContent(true);
-              resetBgColorAnimation();
+              setTimeout(resetBgColorAnimation, 20);
             }, 750);
           })();
         }
@@ -100,7 +100,7 @@ export default function Popup() {
     }
 
     setShowContent(true);
-    resetBgColorAnimation();
+    setTimeout(resetBgColorAnimation, 20);
   };
 
   const showMessage = ({message, loading = false, showBtn = false, btnText = ''}) => {
@@ -146,7 +146,7 @@ export default function Popup() {
 
     if (isStopped) {
       setShowContent(true);
-      resetBgColorAnimation();
+      setTimeout(resetBgColorAnimation, 20);
     }
   };
 
