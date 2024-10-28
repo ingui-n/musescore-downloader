@@ -1,4 +1,4 @@
-<a href="https://chrome.google.com/webstore/detail/music-score-downloader/jhogldboghgffknljgnomjkcfbapogdf"><img alt="Chrome Web Store" width="250px" src="https://raw.githubusercontent.com/ingui-n/musescore-downloader/master/assets/chrome-extension-logo.svg"/></a>
+<a href="https://chrome.google.com/webstore/detail/music-score-downloader/jhogldboghgffknljgnomjkcfbapogdf"><img alt="Chrome Web Store" width="250px" src="https://raw.githubusercontent.com/ingui-n/musescore-downloader/master/assets/chrome-extension-logo.png"/></a>
 <a href="https://addons.mozilla.org/en-US/firefox/addon/music-score-downloader/"><img alt="Firefox Addons" width="218px" src="https://raw.githubusercontent.com/ingui-n/musescore-downloader/master/assets/firefox-addon-logo.svg"/></a>
 
 # Musescore Downloader
