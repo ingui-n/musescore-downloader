@@ -311,6 +311,9 @@ const generatePDF = async (pages = []) => {
   if (pages.length > 0) {
     let imageSize = await getImageSize(pages[0]);
 
+    if (!imageSize)
+      imageSize = size;
+
     if (imageSize.width > imageSize.height) {
       pageOrientation = 'landscape';
       [size.width, size.height] = [size.height, size.width];
@@ -322,12 +325,16 @@ const generatePDF = async (pages = []) => {
       if (abortController.signal.aborted)
         return;
 
-      if (/^<svg/.test(page)) {
+      if (/^<svg/.test(page) || /^<\?xml/.test(page)) {
         let svg = new DOMParser().parseFromString(page, "image/svg+xml");
-        let {width, height} = await getImageSize(page);
+        let imageSize = await getImageSize(page);
 
-        if (!svg.firstChild.getAttribute('viewBox'))
-          svg.firstChild.setAttribute('viewBox', `0 0 ${width} ${height}`);
+        if (!imageSize)
+          imageSize = size;
+
+        if (!svg.querySelector('svg')?.getAttribute('viewBox'))
+          svg.querySelector('svg')
+            .setAttribute('viewBox', `0 0 ${imageSize.width} ${imageSize.height}`);
 
         let svgString = new XMLSerializer().serializeToString(svg);
 
@@ -359,13 +366,14 @@ const generatePDF = async (pages = []) => {
 };
 
 const getImageSize = async image => {
-  if (/^<svg/.test(image)) {
-    let svg = new DOMParser().parseFromString(image, "image/svg+xml");
+  if (/^<svg/.test(image) || /^<\?xml/.test(image)) {
+    const width = image.match(/width="([\d.]+)\w*"/);
+    const height = image.match(/height="([\d.]+)\w*"/);
 
-    const width = Math.round(svg.firstChild.width.baseVal.value * 10) / 10;
-    const height = Math.round(svg.firstChild.height.baseVal.value * 10) / 10;
+    if (!width || !height)
+      return null;
 
-    return {width, height};
+    return {width: width[1], height: height[1]};
   } else {
     return new Promise(resolve => {
       let i = new Image();
