@@ -373,7 +373,7 @@ const getImageSize = async image => {
     if (!width || !height)
       return null;
 
-    return {width: width[1], height: height[1]};
+    return {width: Number(width[1]), height: Number(height[1])};
   } else {
     return new Promise(resolve => {
       let i = new Image();
