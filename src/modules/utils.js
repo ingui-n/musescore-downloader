@@ -7,9 +7,14 @@ export const updateCurrentTab = async () => {
   return tab;
 };
 
-export const getTabByUrl = async url => {
-  const [tab] = await browser.tabs.query({url});
-  return tab;
+export const getTabByUrl = async (url, id) => {
+  const tabs = await browser.tabs.query({url});
+
+  for (const tab of tabs) {
+    if (tab.id === id) {
+      return tab;
+    }
+  }
 };
 
 export const isConnectionOk = async tabId => {

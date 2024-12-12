@@ -31,8 +31,8 @@ export default function Popup() {
           (async () => {
             setTimeout(() => {
               setShowContent(true);
-              setTimeout(resetBgColorAnimation, 20);
-            }, 1250);
+              setTimeout(resetBgColorAnimation, 50);
+            }, 1500);
           })();
         }
       }
@@ -47,14 +47,14 @@ export default function Popup() {
       if (curr.status === 'complete')
         return;
 
-      const tabListenerHandler = async (tabId, changeInfo) => {
-        if (tabId === curr.id && changeInfo.status === 'complete') {
-          browser.tabs.onUpdated.removeListener(tabListenerHandler);
-          setCurrentTab(await getTabByUrl(curr.url));
-        }
-      };
+      const interval = setInterval(async () => {
+        const tab = await getTabByUrl(curr.url, curr.id);
 
-      browser.tabs.onUpdated.addListener(tabListenerHandler);
+        if (tab.id === curr.id && tab.status === 'complete') {
+          clearInterval(interval);
+          setCurrentTab(tab);
+        }
+      }, 300);
     })();
   }, []);
 
@@ -100,7 +100,7 @@ export default function Popup() {
     }
 
     setShowContent(true);
-    setTimeout(resetBgColorAnimation, 20);
+    setTimeout(resetBgColorAnimation, 50);
   };
 
   const showMessage = ({message, loading = false, showBtn = false, btnText = ''}) => {
@@ -146,7 +146,7 @@ export default function Popup() {
 
     if (isStopped) {
       setShowContent(true);
-      setTimeout(resetBgColorAnimation, 20);
+      setTimeout(resetBgColorAnimation, 50);
     }
   };
 
