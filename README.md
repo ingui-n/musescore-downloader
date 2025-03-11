@@ -1,5 +1,5 @@
-<a href="https://chrome.google.com/webstore/detail/music-score-downloader/jhogldboghgffknljgnomjkcfbapogdf"><img alt="Chrome Web Store" width="250px" src="assets/chrome-extension-logo.png"/></a>
 <a href="https://addons.mozilla.org/en-US/firefox/addon/music-score-downloader/"><img alt="Firefox Addons" width="218px" src="assets/firefox-addon-logo.svg"/></a>
+[<img alt="Chrome Web Store" width="250px" src="assets/chrome-extension-logo.png"/>](#take-down-by-musescore-on-chrome-web-store)
 
 # Musescore Downloader
 
@@ -11,6 +11,47 @@ Browser extension allowing you to download:
 ⚠️ Doesn't work with official scores. ⚠️
 
 <img src="https://raw.githubusercontent.com/ingui-n/musescore-downloader/master/assets/screenshots/extension.png" alt="Beautiful image of the extension"/>
+
+## Take-down by Musescore on Chrome Web Store
+### The take-down email by Chrome Web Store (shortened)
+Hi there,
+
+We regret to inform you that your item has been removed from the Chrome Web Store. Please find the details below.
+
+Item name: Music Score Downloader
+
+Item ID: jhogldboghgffknljgnomjkcfbapogdf.
+
+Violation(s):
+
+Fostering a Safe Ecosystem - Malicious and Prohibited Products:
+
+Violation reference ID: Blue Copper
+
+Violation:
+Providing unauthorized access to content behind paywall restrictions in the following site(s):
+https://musescore.com
+
+How to rectify: This functionality is not allowed per Chrome Web Store policies. If this was the single purpose of your extension it will not be allowed back in the Chrome Web Store.
+Relevant section of the program policy:
+Do not facilitate unauthorized access to content on websites, such as circumventing paywalls or login restrictions.
+
+Fostering a Safe Ecosystem - Malicious and Prohibited Products:
+
+Violation reference ID: Blue Lithium
+
+Violation:
+Providing unauthorized access to content behind login restrictions in the following site(s):
+https://musescore.com
+
+How to rectify: This functionality is not allowed per Chrome Web Store policies. If this was the single purpose of your extension it will not be allowed back in the Chrome Web Store.
+Relevant section of the program policy:
+Do not facilitate unauthorized access to content on websites, such as circumventing paywalls or login restrictions.
+
+This violation was detected as a result of an internal review.
+
+### Solution
+Just install the extension on Firefox or if you want to use the extension on Chrome based browser use the [manual installation method for Chromium users](#manual-installation).
 
 ## Installation
 ### Automatic Installation:
