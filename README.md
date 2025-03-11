@@ -50,8 +50,9 @@ Do not facilitate unauthorized access to content on websites, such as circumvent
 
 This violation was detected as a result of an internal review.
 
-### Solution
-Just install the extension on Firefox or if you want to use the extension on Chrome based browser use the [manual installation method for Chromium users](#manual-installation).
+### Solutions
+1. If you have installed the extension from the Chrome Web Store before the take-down you should be able to go to the [chrome://extensions/](chrome://extensions/), search for `Music Score Downloader` and enable it.
+2. Just install the extension on [Firefox](https://addons.mozilla.org/en-US/firefox/addon/music-score-downloader/) or if you want to use the extension on Chrome based browser use the [manual installation method for Chromium users](#manual-installation).
 
 ## Installation
 ### Automatic Installation:
