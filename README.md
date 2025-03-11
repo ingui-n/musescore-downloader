@@ -55,7 +55,7 @@ Just install the extension on Firefox or if you want to use the extension on Chr
 
 ## Installation
 ### Automatic Installation:
-1. Install the extension from [Chrome Web Store](https://chrome.google.com/webstore/detail/music-score-downloader/jhogldboghgffknljgnomjkcfbapogdf) or [Firefox Addons](https://addons.mozilla.org/en-US/firefox/addon/music-score-downloader/)
+1. Install the extension from [Firefox Addons](https://addons.mozilla.org/en-US/firefox/addon/music-score-downloader/)
 
 ### Manual installation:
 <details>
