@@ -1,4 +1,5 @@
 <a href="https://addons.mozilla.org/en-US/firefox/addon/music-score-downloader/"><img alt="Firefox Addons" width="218px" src="assets/firefox-addon-logo.svg"/></a>
+<a href="https://microsoftedge.microsoft.com/addons/detail/aegblfpiokmhabjiokpdegajkdmnpmdk"><img alt="Edge Addons" width="150px" src="assets/edge-extension-logo.png"/></a>
 
 # Musescore Downloader
 
@@ -27,6 +28,7 @@ Long story short Chrome removed the extension from Web Store because of Musescor
 ### Automatic Installation
 
 1. Install the extension from [Firefox Addons](https://addons.mozilla.org/en-US/firefox/addon/music-score-downloader/)
+   or [Microsoft Edge Addons](https://microsoftedge.microsoft.com/addons/detail/aegblfpiokmhabjiokpdegajkdmnpmdk)
 
 ### Manual installation
 
@@ -77,6 +79,7 @@ Long story short Chrome removed the extension from Web Store because of Musescor
 ## Supported browsers
 
 * Firefox
+* Edge
 * Chrome
 * Opera
 * Brave
