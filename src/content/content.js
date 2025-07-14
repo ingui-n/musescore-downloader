@@ -287,8 +287,6 @@ const buildPdf = async () => {
 
       if (img) {
         sheetImages.push(img);
-      } else {
-        break;
       }
     }
   }
