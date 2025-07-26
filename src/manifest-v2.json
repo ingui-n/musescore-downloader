@@ -2,7 +2,7 @@
   "manifest_version": 2,
   "name": "Music Score Downloader",
   "description": "Extension allowing you to download music sheets, audio and midi files for free",
-  "version": "0.5.12",
+  "version": "0.5.13",
   "icons": {
     "16": "icon-16.png",
     "32": "icon-32.png",
@@ -14,7 +14,8 @@
     "storage",
     "https://musescore.com/*",
     "https://s3.ultimate-guitar.com/musescore.scoredata/g/*",
-    "https://cdn.ustatik.com/*"
+    "https://cdn.ustatik.com/*",
+    "https://*.wasabisys.com/*"
   ],
   "browser_action": {
     "default_popup": "popup.html"

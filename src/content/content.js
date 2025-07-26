@@ -94,8 +94,8 @@ const setScoreId = () => {
     scoreId = url.split('/').pop();
 };
 
-const setScorePagesSum = () => {
-  if (!!scorePagesSum)
+const setScorePagesSum = (retries = 0) => {
+  if (!!scorePagesSum || retries > 7)
     return;
 
   const matchPagesNumber1 = document.querySelector('body').outerHTML.match(/\d+ of (\d+) pages/);
@@ -116,6 +116,10 @@ const setScorePagesSum = () => {
 
   if (pagesDivClassName) {
     scorePagesSum = document.querySelectorAll('.' + pagesDivClassName).length;
+  }
+
+  if (!scorePagesSum) {
+    setTimeout(() => setScorePagesSum(retries + 1), 50);
   }
 };
 
@@ -415,7 +419,8 @@ const downloadFile = async (url, type) => {
 
     await sendMessageToPopup(`${capitalizeFirstLetter(type)} successfully downloaded`, false, true);
   } catch (e) {
-    await sendMessageToPopup('Cannot download file', false, true);
+    window.location.assign(url);
+    await sendMessageToPopup('The requested file should be downloaded', false, true);
     // window.open(url);
   }
 };
