@@ -258,7 +258,12 @@ const fetchImageUrl = async url => {
           const reader = new FileReader();
           reader.onloadend = () => resolve(reader.result);
           reader.onerror = reject;
-          reader.readAsDataURL(blob);
+
+          if (blob.type === 'binary/octet-stream') {
+            reader.readAsText(blob);
+          } else {
+            reader.readAsDataURL(blob);
+          }
         }) || '';
       }
     })
