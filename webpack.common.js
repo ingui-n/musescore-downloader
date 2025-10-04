@@ -56,49 +56,35 @@ module.exports = {
   plugins: [
     new CleanWebpackPlugin({verbose: false}),
     new CopyPlugin({
-      patterns: [{
-        from: path.resolve('src/manifest.json'),
-        to: path.resolve('dist'),
-        transform: content => {
-          return Buffer.from(
-            JSON.stringify({
-              description: process.env.npm_package_description,
-              version: process.env.npm_package_version,
-              ...JSON.parse(content.toString())
-            })
-          );
-        }
-      }]
-    }),
-    new CopyPlugin({
       patterns: [
+        {
+          from: path.resolve('src/manifest.json'),
+          to: path.resolve('dist'),
+          transform: content => {
+            return Buffer.from(
+              JSON.stringify({
+                description: process.env.npm_package_description,
+                version: process.env.npm_package_version,
+                ...JSON.parse(content.toString())
+              })
+            );
+          }
+        },
         {
           from: 'src/assets/img',
           to: path.join(__dirname, 'dist'),
           force: true,
         },
-      ],
-    }),
-    new CopyPlugin({
-      patterns: [
         {
           from: 'src/sandbox',
           to: path.join(__dirname, 'dist'),
           force: true,
         },
-      ],
-    }),
-    new CopyPlugin({
-      patterns: [
         {
           from: 'src/assets/fonts/FiraSans.css',
           to: path.join(__dirname, 'dist'),
           force: true,
         },
-      ],
-    }),
-    new CopyPlugin({
-      patterns: [
         {
           from: 'src/content/content.css',
           to: path.join(__dirname, 'dist'),
