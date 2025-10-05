@@ -1,48 +1,30 @@
-<a href="https://addons.mozilla.org/en-US/firefox/addon/music-score-downloader/"><img alt="Firefox Addons" width="218px" src="assets/firefox-addon-logo.svg"/></a>
-<a href="https://microsoftedge.microsoft.com/addons/detail/aegblfpiokmhabjiokpdegajkdmnpmdk"><img alt="Edge Addons" width="150px" src="assets/edge-extension-logo.png"/></a>
+<a href="https://chrome.google.com/webstore/detail/music-score-downloader/jhogldboghgffknljgnomjkcfbapogdf"><img alt="Chrome Web Store" width="250px" src="https://storage.googleapis.com/web-dev-uploads/image/WlD8wC6g8khYWPJUsQceQkhXSlv1/HRs9MPufa1J1h5glNhut.png"/></a>
+<a href="https://addons.mozilla.org/en-US/firefox/addon/music-score-downloader/"><img alt="Firefox Addons" width="218px" src="https://blog.mozilla.org/addons/files/2020/04/get-the-addon-fx-apr-2020.svg"/></a>
 
-# Musescore Downloader
+# MuseScore Downloader
 
-Browser extension allowing you to download:
+This browser extension allows you to download:
+* audio - mp3
+* music sheets - pdf
+* midi - mid
 
-* audio - MP3
-* music sheets - PDF
-* midi - MID
+⚠️ Doesn't work on official scores.
 
-⚠️ Doesn't work with official scores. ⚠️
-
-<img src="https://raw.githubusercontent.com/ingui-n/musescore-downloader/master/assets/screenshots/extension.png" alt="Beautiful image of the extension"/>
-
-## Take-down by Musescore on Chrome Web Store
-
-Long story short Chrome removed the extension from Web Store because of Musescore request.
-[Shortened take-down email](chrome-web-store-takedown.md)
-
-- Violation `Blue Copper`: Providing unauthorized access to content behind paywall restrictions in the
-  site: https://musescore.com
-- Violation `Blue Lithium`: Providing unauthorized access to content behind login restrictions in the
-  site: https://musescore.com
+<img src="https://raw.githubusercontent.com/ingui-n/musescore-downloader/master/screenshots/extension.png" alt="Beautiful image of the extension"/>
 
 ## Installation
+### Automatic Installation:
+1. Install the extension from [Chrome Web Store](https://chrome.google.com/webstore/detail/music-score-downloader/jhogldboghgffknljgnomjkcfbapogdf) or [Firefox Addons](https://addons.mozilla.org/en-US/firefox/addon/music-score-downloader/)
 
-### Automatic Installation
-
-1. Install the extension from [Firefox Addons](https://addons.mozilla.org/en-US/firefox/addon/music-score-downloader/)
-   or [Microsoft Edge Addons](https://microsoftedge.microsoft.com/addons/detail/aegblfpiokmhabjiokpdegajkdmnpmdk)
-
-### Manual installation
-
+### Manual installation:
 <details>
   <summary>For Chromium users: (click)</summary>
 
 1. Go to [the latest release](https://github.com/ingui-n/musescore-downloader/releases/latest)
-2. Download the **ZIP** file `musescore-downloader-0.x.x-manifest-v3.zip` and extract it to a safe location
-   where you won’t accidentally delete it, as the extension won’t load if the files are removed.
+2. Download the `musescore-downloader-manifest-v3.crx` file
 3. Go to the browser extension manager [chrome://extensions/](chrome://extensions/)
-4. Enable `Developer mode`. In Google Chrome at the top right, in Microsoft Edge on the left side.
-5. The `Load unpacked` option should appear. Click on it and navigate to the directory where you extracted the files.
-   If you see a message like *The manifest is missing*, double-check that you’re selecting the correct directory
-   containing the extracted files.
+4. Enable `Developer mode` (at the top right)
+5. Drag and drop the file downloaded in the previous step into the browser window and click to install
 6. That's it! Extension is now ready to use 🎉
 
 </details>
@@ -51,35 +33,20 @@ Long story short Chrome removed the extension from Web Store because of Musescor
   <summary>For Firefox users: (click)</summary>
 
 1. Go to [the latest release](https://github.com/ingui-n/musescore-downloader/releases/latest)
-2. Click on the **XPI** the file `musescore-downloader-0.x.x-manifest-v2.xpi`
+2. Click to the `musescore-downloader-manifest-v2.crx` file
 3. A bubble with text and button should appear. Click on `Continue to Installation` and `Add`
 4. That's it! Extension is now ready to use 🎉
-
 </details>
 
-<details>
-  <summary>Chromium CRX approach (still working on Opera): (click)</summary>
 
-1. Go to [the latest release](https://github.com/ingui-n/musescore-downloader/releases/latest)
-2. Click on the **CRX** file `musescore-downloader-0.x.x-manifest-v3.crx`
-3. This should trigger opening top bar message with `Go to extension` button
-4. This will redirect you to [chrome://extensions/](chrome://extensions/). Just click on `Install` button and confirm
-   the installation.
-5. That's it! Extension is now ready to use 🎉
-
-</details>
-
-## Usage
-
-1. Go to [Musescore.com](https://musescore.com/)
+## Usage:
+1. Go to [MuseScore.com](https://musescore.com/)
 2. Open a music sheet
-3. Click to Music Score Downloader icon in the extensions tab
+3. Click to Music Score Downloader icon
 4. Select what you want to do
 
-## Supported browsers
-
+## Supported browsers:
 * Firefox
-* Edge
 * Chrome
 * Opera
 * Brave
@@ -88,4 +55,4 @@ Long story short Chrome removed the extension from Web Store because of Musescor
 
 Please use this extension for study purposes only.
 
-<img src="https://raw.githubusercontent.com/ingui-n/musescore-downloader/master/assets/screenshots/screenshot.png" alt="Beautiful image with extension on Musescore website"/>
+<img src="https://raw.githubusercontent.com/ingui-n/musescore-downloader/master/screenshots/screenshot.png" alt="Beautiful image with extension on MuseScore website"/>
