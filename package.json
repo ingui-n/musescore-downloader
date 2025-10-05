@@ -1,6 +1,6 @@
 {
   "name": "musescore-downloader",
-  "version": "0.5.14",
+  "version": "0.5.15",
   "description": "Browser extension allowing to download music sheets, audio and midi files for free",
   "repository": {
     "type": "git",
@@ -11,7 +11,7 @@
     "build": "webpack --progress --config webpack.prod.js"
   },
   "devDependencies": {
-    "@babel/core": "^7.28.3",
+    "@babel/core": "^7.28.4",
     "@babel/plugin-proposal-class-properties": "^7.18.6",
     "@babel/plugin-syntax-jsx": "^7.27.1",
     "@babel/preset-env": "^7.28.3",
@@ -21,14 +21,14 @@
     "copy-webpack-plugin": "^13.0.1",
     "css-loader": "^7.1.2",
     "html-webpack-plugin": "^5.6.4",
-    "react": "^19.1.1",
-    "react-dom": "^19.1.1",
-    "react-router-dom": "^7.8.2",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "react-router-dom": "^7.9.3",
     "source-map-loader": "^5.0.0",
     "style-loader": "^4.0.0",
     "terser-webpack-plugin": "^5.3.14",
     "webextension-polyfill": "^0.12.0",
-    "webpack": "^5.101.3",
+    "webpack": "^5.102.0",
     "webpack-cli": "^6.0.1",
     "webpack-merge": "^6.0.1"
   },
