@@ -85,7 +85,10 @@ export const delay = time => {
 export const fetchApiUrl = async (scoreId, token, type, index = 0) => {
   return await fetch(
     `https://musescore.com/api/jmuse?id=${scoreId}&index=${index}&type=${type}`,
-    {headers: {authorization: token}}
+    {
+      headers: {authorization: token},
+      referrer: location.href
+    }
   )
     .then(res => res.ok ? res.json() : null)
     .then(res => res ? res.info.url : null);
