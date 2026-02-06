@@ -23,7 +23,7 @@ const executeAlgorithm = async () => {
 
   return await new Promise(resolve => {
     const processMessage = e => {
-      if (!/^https?:\/\/musescore\.com/.test(e.origin) && typeof e.data === 'object' && e.data.msdExecuteScript) {
+      if (!/^https?:\/\/musescore\.com/.test(e.origin) && typeof e.data === 'object' && e.data.msdExecuteScript !== undefined) {
         window.removeEventListener('message', processMessage);
         resolve(e.data.msdExecuteScript);
       }
@@ -99,7 +99,7 @@ const updateTokenAlgorithm = async url => {
   if (!functionNumber)
     return false;
 
-  script = script.replace(/\(self\.[^,]*,/, getScriptStart(functionNumber));
+  script = script.replace(/\(self\.[^}]*(?=\{(\d+):)/, getScriptStart(functionNumber));
   script = script.replace(/}}]\)/, '}})');
   script = script.replace(
     /_digestsize=(\d+),\w+\.exports=function\(/,

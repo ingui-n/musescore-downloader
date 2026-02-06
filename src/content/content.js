@@ -232,8 +232,11 @@ const getMediaUrl = async (type, index) => {
       const url = await promiseTimeout(getMediaUrlWithAlgorithm(scoreId, type, index), 1000)
         .catch();
 
-      if (url)
+      if (url) {
         return url;
+      } else {
+        isTokenAlgorithmAvailable = false;
+      }
     } catch (e) {
       isTokenAlgorithmAvailable = false;
     }
