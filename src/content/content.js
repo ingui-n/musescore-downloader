@@ -163,15 +163,36 @@ const openSheet = async (resolve, reject) => {
 const downloadSheet = async (resolve, reject) => {
   abortController.signal.addEventListener('abort', reject);
 
+  const pdfFileName = `${scoreComposer ? scoreComposer + ' - ' : ''}${scoreName}.pdf`;
+
   if (pdfFile) {
-    await sendMessageToPopup('PDF successfully generated', false, true);
-    resolve(pdfFile.download(`${scoreComposer ? scoreComposer + ' - ' : ''}${scoreName}.pdf`));
+    await sendMessageToPopup('Downloading PDF file', true);
+
+    try {
+      pdfFile.download(pdfFileName);
+      await sendMessageToPopup('PDF successfully generated', false, true);
+      resolve();
+    } catch (e) {
+      await sendMessageToPopup('Failed to download PDF file', false, true);
+      reject(e);
+    }
   } else {
     await buildPdf();
 
     if (pdfFile) {
-      await sendMessageToPopup('PDF successfully generated', false, true);
-      resolve(pdfFile.download(`${scoreComposer ? scoreComposer + ' - ' : ''}${scoreName}.pdf`));
+      await sendMessageToPopup('Downloading PDF file', true);
+
+      try {
+        pdfFile.download(pdfFileName);
+        await sendMessageToPopup('PDF successfully generated', false, true);
+        resolve();
+      } catch (e) {
+        await sendMessageToPopup('Failed to download PDF file', false, true);
+        reject(e);
+      }
+    } else {
+      await sendMessageToPopup('Failed to generate PDF file', false, true);
+      reject(new Error('PDF file generation failed'));
     }
   }
 };
@@ -346,9 +367,16 @@ const generatePDF = async (pages = []) => {
           svg.querySelector('svg')
             .setAttribute('viewBox', `0 0 ${imageSize.width} ${imageSize.height}`);
 
+        setSvgFontFallback(svg);
+
         let svgString = new XMLSerializer().serializeToString(svg);
 
-        docContent.push({svg: svgString, ...size, alignment: 'center'});
+        try {
+          const rasterizedSvg = await convertSvgToPng(svgString, imageSize);
+          docContent.push({image: rasterizedSvg, ...size, alignment: 'center'});
+        } catch (e) {
+          docContent.push({svg: svgString, ...size, alignment: 'center'});
+        }
       } else {
         docContent.push({image: page, ...size, alignment: 'center'});
       }
@@ -390,6 +418,70 @@ const getImageSize = async image => {
       i.onload = () => resolve({width: i.width, height: i.height});
       i.src = image;
     });
+  }
+};
+
+const setSvgFontFallback = svgDocument => {
+  const defaultFont = 'Helvetica';
+
+  const svgRoot = svgDocument.querySelector('svg');
+  if (!svgRoot)
+    return;
+
+  svgRoot.setAttribute('font-family', defaultFont);
+
+  const styleNodes = svgDocument.querySelectorAll('style');
+  for (const styleNode of styleNodes) {
+    if (!styleNode.textContent)
+      continue;
+
+    styleNode.textContent = styleNode.textContent
+      .replace(/@font-face\s*\{[^}]*}/gi, '')
+      .replace(/font-family\s*:\s*[^;}{]+/gi, `font-family: ${defaultFont}`);
+  }
+
+  const textNodes = svgDocument.querySelectorAll('text, tspan, textPath');
+  for (const textNode of textNodes) {
+    textNode.setAttribute('font-family', defaultFont);
+
+    const style = textNode.getAttribute('style');
+    if (style) {
+      if (/font-family\s*:/i.test(style)) {
+        textNode.setAttribute('style', style.replace(/font-family\s*:\s*[^;]+/i, `font-family:${defaultFont}`));
+      } else {
+        textNode.setAttribute('style', `${style};font-family:${defaultFont}`);
+      }
+    }
+  }
+};
+
+const convertSvgToPng = async (svgString, imageSize) => {
+  const blob = new Blob([svgString], {type: 'image/svg+xml;charset=utf-8'});
+  const blobUrl = URL.createObjectURL(blob);
+
+  try {
+    const image = await new Promise((resolve, reject) => {
+      const svgImage = new Image();
+      svgImage.onload = () => resolve(svgImage);
+      svgImage.onerror = () => reject(new Error('Cannot load SVG for rasterization'));
+      svgImage.src = blobUrl;
+    });
+
+    const width = Math.max(1, Math.round(imageSize?.width || image.width || 1));
+    const height = Math.max(1, Math.round(imageSize?.height || image.height || 1));
+
+    const canvas = document.createElement('canvas');
+    canvas.width = width;
+    canvas.height = height;
+
+    const context = canvas.getContext('2d');
+    if (!context)
+      throw new Error('Cannot initialize canvas context');
+
+    context.drawImage(image, 0, 0, width, height);
+    return canvas.toDataURL('image/png');
+  } finally {
+    URL.revokeObjectURL(blobUrl);
   }
 };
 
