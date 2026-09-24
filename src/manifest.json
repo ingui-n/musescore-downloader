@@ -28,7 +28,7 @@
   "content_scripts": [
     {
       "matches": [
-        "https://musescore.com/*"
+        "https://*.musescore.com/*"
       ],
       "js": [
         "content.js"
@@ -51,7 +51,7 @@
         "sandbox.html"
       ],
       "matches": [
-        "https://musescore.com/*"
+        "https://*.musescore.com/*"
       ]
     }
   ]

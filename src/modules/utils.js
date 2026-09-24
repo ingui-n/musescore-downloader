@@ -1,4 +1,5 @@
 import browser from 'webextension-polyfill';
+import {sendMessageToPopup} from "../content/content";
 
 let loadingAnimationInterval;
 
@@ -26,7 +27,7 @@ export const isConnectionOk = async tabId => {
 };
 
 export const isMuseScoreUrl = url => {
-  return url.match(/^https?:\/\/musescore\.com\//) !== null;
+  return url.match(/^https?:\/\/\S*musescore\.com\//) !== null;
 };
 
 export const isScoreUrl = url => {
