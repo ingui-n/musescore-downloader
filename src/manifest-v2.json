@@ -11,6 +11,7 @@
   },
   "permissions": [
     "webRequest",
+    "declarativeNetRequest",
     "storage",
     "https://*.musescore.com/*",
     "https://s3.ultimate-guitar.com/musescore.scoredata/g/*",

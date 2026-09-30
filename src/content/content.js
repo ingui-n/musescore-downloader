@@ -227,7 +227,7 @@ const downloadMidi = async (resolve, reject) => {
   }
 };
 
-const sendMessageToPopup = async (message, loading = false, reset = false) => {
+export const sendMessageToPopup = async (message, loading = false, reset = false) => {
   latestProgressMessage = loading ? {message, loading} : null;
 
   browser.runtime.sendMessage({message, loading, reset}).catch(() => null);
@@ -252,6 +252,7 @@ const getMediaUrl = async (type, index) => {
       }
     } catch (e) {
       isTokenAlgorithmAvailable = false;
+      console.error(e);
     }
   }
 
@@ -262,7 +263,7 @@ const getMediaUrl = async (type, index) => {
 };
 
 const fetchImageUrl = async url => {
-  return await fetch(url)
+  return await fetch(url, {credentials: 'include'})
     .then(res => res.blob())
     .then(async blob => {
       if (blob.type === 'application/xml') {
@@ -283,7 +284,7 @@ const fetchImageUrl = async url => {
         }) || '';
       }
     })
-    .catch(() => '');
+    .catch(console.error);
 };
 
 const buildPdf = async () => {
@@ -416,7 +417,7 @@ const downloadFile = async (url, type) => {
   };
 
   try {
-    const res = await fetch(url);
+    const res = await fetch(url, {credentials: 'include'});
 
     if (!res.ok) {
       await sendMessageToPopup('Cannot download file', false, true);

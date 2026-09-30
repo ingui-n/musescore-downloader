@@ -1,5 +1,6 @@
 import browser from 'webextension-polyfill';
 import {fetchApiUrl} from "../modules/utils";
+import {sendMessageToPopup} from "./content";
 
 export let isTokenAlgorithmAvailable = false;
 let script, sandbox;
@@ -148,7 +149,13 @@ export const getMediaUrlWithAlgorithm = async (scoreId, type, index) => {
   if (!token)
     return;
 
-  return await fetchApiUrl(scoreId, token, type, index);
+  const url = await fetchApiUrl(scoreId, token, type, index);
+
+  if (!url) {
+    await sendMessageToPopup(`Cannot download page ${index}`, false, true);
+  }
+
+  return url;
 };
 
 const prepareSandbox = async () => {
