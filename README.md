@@ -76,3 +76,7 @@ Long story short Chrome removed the extension from Web Store because of Musescor
 Please use this extension for study purposes only.
 
 <img src="https://raw.githubusercontent.com/ingui-n/musescore-downloader/master/assets/screenshots/screenshot.png" alt="Beautiful image with extension on Musescore website"/>
+
+## License
+
+This extension is released under [the MIT License](./LICENSE) (Expat variation).
