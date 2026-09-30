@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Music Score Downloader",
   "description": "Extension allowing you to download music sheets, audio and midi files for free",
-  "version": "0.5.18",
+  "version": "0.5.19",
   "icons": {
     "16": "icon-16.png",
     "32": "icon-32.png",
@@ -11,6 +11,7 @@
   },
   "permissions": [
     "webRequest",
+    "declarativeNetRequest",
     "storage"
   ],
   "host_permissions": [
@@ -28,7 +29,7 @@
   "content_scripts": [
     {
       "matches": [
-        "https://musescore.com/*"
+        "https://*.musescore.com/*"
       ],
       "js": [
         "content.js"
@@ -51,7 +52,7 @@
         "sandbox.html"
       ],
       "matches": [
-        "https://musescore.com/*"
+        "https://*.musescore.com/*"
       ]
     }
   ]

@@ -45,7 +45,13 @@ module.exports = {
           {
             loader: 'babel-loader',
             options: {
-              presets: ['@babel/preset-env', '@babel/preset-react']
+              presets: [
+                '@babel/preset-env',
+                ['@babel/preset-react', {
+                  runtime: 'automatic',
+                  development: process.env.NODE_ENV === 'development'
+                }]
+              ]
             }
           },
         ],
@@ -117,7 +123,7 @@ module.exports = {
     topLevelAwait: true
   },
   resolve: {
-    extensions: ['.js']
+    extensions: ['.js', '.jsx']
   },
   output: {
     filename: '[name].js',

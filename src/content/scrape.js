@@ -1,6 +1,6 @@
 import {delay, fetchApiUrl} from "../modules/utils";
 import browser from "webextension-polyfill";
-import {scoreId, scorePagesSum} from "./content";
+import {scoreId, scorePagesSum, sendMessageToPopup} from "./content";
 
 let allTokens = {};
 
@@ -18,8 +18,10 @@ export const getMediaUrlWithScrape = async (scoreId, type, index = 0, round = 0)
       return url;
   }
 
-  if (round > 2)
+  if (round > 2) {
+    await sendMessageToPopup(`Cannot download page ${index}`, false, true);
     return null;
+  }
 
   if (type === 'mp3') {
     await scrapeMp3Data();
