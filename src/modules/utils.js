@@ -108,13 +108,6 @@ export const fetchApiUrl = async (scoreId, token, type, index = 0) => {
   }
 };
 
-export const promiseTimeout = async (promise, time) => {
-  return await Promise.race([
-    promise,
-    new Promise((_, reject) => setTimeout(() => reject('F'), time))
-  ]);
-};
-
 export const capitalizeFirstLetter = string => {
   return string.charAt(0).toUpperCase() + string.slice(1);
 };

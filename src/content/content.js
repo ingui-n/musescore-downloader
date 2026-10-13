@@ -3,7 +3,7 @@ import Printer from "pdfmake";
 import pdfFonts from 'pdfmake/build/vfs_fonts';
 import {getMediaUrlWithAlgorithm} from "./tokenAlgorithm";
 import {getMediaUrlWithScrape} from "./scrape";
-import {capitalizeFirstLetter, promiseTimeout} from "../modules/utils";
+import {capitalizeFirstLetter} from "../modules/utils";
 
 let abortController;
 
@@ -242,18 +242,15 @@ const getMediaUrl = async (type, index) => {
 
   if (isTokenAlgorithmAvailable) {
     try {
-      const url = await promiseTimeout(getMediaUrlWithAlgorithm(scoreId, type, index), 1000)
-        .catch();
+      const url = await getMediaUrlWithAlgorithm(scoreId, type, index);
 
-      if (url) {
+      if (url)
         return url;
-      } else {
-        isTokenAlgorithmAvailable = false;
-      }
     } catch (e) {
-      isTokenAlgorithmAvailable = false;
       console.error(e);
     }
+
+    isTokenAlgorithmAvailable = false;
   }
 
   if (abortController.signal.aborted)
