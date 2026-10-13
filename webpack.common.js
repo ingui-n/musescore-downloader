@@ -88,15 +88,6 @@ module.exports = {
     new CopyPlugin({
       patterns: [
         {
-          from: 'src/sandbox',
-          to: path.join(__dirname, 'dist'),
-          force: true,
-        },
-      ],
-    }),
-    new CopyPlugin({
-      patterns: [
-        {
           from: 'src/assets/fonts/FiraSans.css',
           to: path.join(__dirname, 'dist'),
           force: true,

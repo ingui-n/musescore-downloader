@@ -85,11 +85,14 @@ const scrapeMidiData = async () => {
         resolve(true);
       }
 
-      setInterval(() => {
+      const checkMidiPartLoaded = () => {
         if (window.location.pathname.endsWith('/piano-tutorial')) {
+          clearInterval(interval);
           resolve(true);
         }
-      }, 50);
+      };
+
+      const interval = setInterval(checkMidiPartLoaded, 50);
 
       setTimeout(() => {
         resolve(false);

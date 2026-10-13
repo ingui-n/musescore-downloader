@@ -1,194 +1,95 @@
 import browser from 'webextension-polyfill';
-import {fetchApiUrl} from "../modules/utils";
-import {sendMessageToPopup} from "./content";
+import SparkMD5 from 'spark-md5';
+import {fetchApiUrl} from '../modules/utils';
 
 export let isTokenAlgorithmAvailable = false;
-let script, sandbox;
 
-const checkTokenAlgorithm = async () => {
-  const scriptUrlFromDocument = getScriptUrlFromDocument();
+const BUILD_URL_RE = /^https:\/\/musescore\.com\/static\/public\/build\/[\w\/]+\/\d+\/\d+\.\w+\.js(?:\?.*)?$/;
+const SECRET_RE = /\w\+\w\+\w\+"([^"\\]{1,64})"\)\.substr\(0, *4\)/;
+const MD5_INIT_CONSTANTS = ['1732584193', '-271733879', '-1732584194', '271733878'];
 
-  if (!scriptUrlFromDocument)
-    return false;
+let secret = null;
 
-  const scriptFromStorage = await getScriptFromStorage();
+const getBuildScriptUrls = () => {
+  const urls = [...document.querySelectorAll('link')]
+    .map(link => link.href)
+    .filter(href => BUILD_URL_RE.test(href));
 
-  if (scriptUrlFromDocument === scriptFromStorage)
-    return true;
-
-  return await updateTokenAlgorithm(scriptUrlFromDocument);
+  return [...new Set(urls)];
 };
 
-const executeAlgorithm = async () => {
-  await sandbox.contentWindow.postMessage({executeScript: script}, '*');
+const getTokenSecretFromCache = async () => {
+  return (await browser.storage.local.get('tokenSecret')).tokenSecret;
+};
 
-  return await new Promise(resolve => {
-    const processMessage = e => {
-      if (!/^https?:\/\/musescore\.com/.test(e.origin) && typeof e.data === 'object' && e.data.msdExecuteScript !== undefined) {
-        window.removeEventListener('message', processMessage);
-        resolve(e.data.msdExecuteScript);
+const setTokenSecretToCache = async data => {
+  await browser.storage.local.set({tokenSecret: data});
+};
+
+const extractSecret = text => {
+  if (!MD5_INIT_CONSTANTS.every(constant => text.includes(constant)))
+    return null;
+
+  return text.match(SECRET_RE)?.[1] ?? null;
+};
+
+const loadSecret = async () => {
+  if (secret) return secret;
+  const urls = getBuildScriptUrls();
+  const cached = await getTokenSecretFromCache();
+
+  if (cached?.secret && urls.includes(cached.url)) {
+    secret = cached.secret;
+    return secret;
+  }
+
+  for (const url of urls) {
+    try {
+      const found = extractSecret(await (await fetch(url)).text());
+      if (found) {
+        await setTokenSecretToCache({url, secret: found});
+        secret = found;
+        return secret;
       }
-    };
-
-    window.addEventListener('message', processMessage);
-  });
-};
-
-const getScriptStart = functionNumber => {
-  return `(function (modules) {
-  var installedModules = {};
-
-  function __webpack_require__(moduleId) {
-    if (installedModules[moduleId]) {
-      return installedModules[moduleId].exports;
-    }
-    var module = installedModules[moduleId] = {
-      i: moduleId,
-      l: false,
-      exports: {}
-    };
-    modules[moduleId].call(module.exports, module, module.exports, __webpack_require__);
-    module.l = true;
-    return module.exports;
-  }
-
-  __webpack_require__.m = modules;
-  __webpack_require__.c = installedModules;
-  return __webpack_require__(__webpack_require__.s = ${functionNumber});
-})(`
-};
-
-const getScriptUrlFromDocument = () => {
-  const links = document.querySelectorAll('link');
-
-  for (const link of links) {
-    if (/https:\/\/musescore\.com\/static\/public\/build\/[\w\/]+\/\d+\/\d+\.\w+.js/.test(link.href)) {
-      return link.href;
-    }
-  }
-};
-
-const fetchScript = async url => {
-  return await fetch(url)
-    .then(response => response.text())
-    .catch(e => {
+    } catch (e) {
       console.error(e);
-    });
-}
-
-const updateTokenAlgorithm = async url => {
-  let script = await fetchScript(url);
-
-  if (!script)
-    return false;
-
-  const randomToken = script.match(/"([\W\w]{1,50})"\)\.substr\(0, *4\)/)?.[1];
-
-  if (!randomToken)
-    return false;
-
-  let scriptParts = script.split(/, *(\d+): *(?:function)*\([\w,]{1,8}\)(?: *=> *|)\{/);
-  let functionNumber;
-
-  for (let i = 0; i < scriptParts.length; i++) {
-    if (scriptParts[i].includes('_digestsize') && scriptParts[i].includes('_blocksize')) {
-      functionNumber = scriptParts[i - 1];
-      break;
     }
   }
 
-  if (!functionNumber)
-    return false;
-
-  script = script.replace(/\(self\.[^}]*(?=\{(\d+):)/, getScriptStart(functionNumber));
-  script = script.replace(/}}]\)/, '}})');
-  script = script.replace(
-    /_digestsize=(\d+),\w+\.exports=function\(/,
-    (match, a) => `_digestsize=${a},window.generateToken=function\(`
-  );
-
-  await setScriptToStorage({url, script, randomToken});
-
-  return true;
+  isTokenAlgorithmAvailable = false;
+  return null;
 };
 
-export const getScriptFromStorage = async () => {
-  return (await browser.storage.local.get('tokenAlgorithm')).tokenAlgorithm;
+const init = async () => {
+  secret = await loadSecret();
+  isTokenAlgorithmAvailable = !!secret;
 };
 
-const setScriptToStorage = async (data) => {
-  await browser.storage.local.set({tokenAlgorithm: data});
-};
+export const generateToken = (id, type, index = 0) =>
+  SparkMD5.hash(`${id}${type}${index}${secret}`).substring(0, 4);
 
-const generateTokenInSandbox = async (id, type, index = 0) => {
-  await prepareSandboxConnection();
+export const getMediaUrlWithAlgorithm = async (scoreId, type, index = 0) => {
+  await init();
 
-  if (!isTokenAlgorithmAvailable)
-    return false;
-
-  await sandbox.contentWindow.postMessage({generateToken: {id, type, index}}, '*');
-
-  return await new Promise(resolve => {
-    const processMessage = e => {
-      if (typeof e.data === 'object' && e.data.msdGenerateToken) {
-        window.removeEventListener('message', processMessage);
-        resolve(e.data.msdGenerateToken);
-      }
-    };
-
-    window.addEventListener('message', processMessage);
-  });
-};
-
-export const getMediaUrlWithAlgorithm = async (scoreId, type, index) => {
   if (!isTokenAlgorithmAvailable)
     return;
 
-  const token = await generateTokenInSandbox(scoreId, type, index);
+  return await fetchApiUrl(scoreId, generateToken(scoreId, type, index), type, index);
+};
 
-  if (!token)
+// self-check against tokens by musescore
+browser.runtime.onMessage.addListener(req => {
+  if (typeof req !== 'object' || !req?.scoreData || !secret)
     return;
 
-  const url = await fetchApiUrl(scoreId, token, type, index);
+  const [key, observedToken] = req.scoreData;
+  const [id, type, index] = key.split('_');
 
-  if (!url) {
-    await sendMessageToPopup(`Cannot download page ${index}`, false, true);
+  if (generateToken(id, type, index) !== observedToken) {
+    console.warn('[msd] local token differs from the one used by musescore.com, using scrape fallback');
+    isTokenAlgorithmAvailable = false;
   }
-
-  return url;
-};
-
-const prepareSandbox = async () => {
-  const iframe = document.createElement('iframe');
-
-  iframe.src = browser.runtime.getURL("sandbox.html");
-  iframe.style.display = "none";
-  document.body.appendChild(iframe);
-
-  sandbox = iframe;
-
-  await new Promise(resolve => {
-    iframe.onload = resolve;
-  });
-};
-
-const prepareSandboxConnection = async () => {
-  try {
-    await sandbox.contentWindow.postMessage('', '*');
-  } catch (e) {
-    await initTokenAlgorithm();
-  }
-};
-
-const initTokenAlgorithm = async () => {
-  const isAvailable = await checkTokenAlgorithm();
-
-  if (isAvailable) {
-    script = await getScriptFromStorage();
-    await prepareSandbox();
-    isTokenAlgorithmAvailable = await executeAlgorithm();
-  }
-};
+});
 
 if (window)
-  window.addEventListener('load', initTokenAlgorithm);
+  window.addEventListener('load', init);
